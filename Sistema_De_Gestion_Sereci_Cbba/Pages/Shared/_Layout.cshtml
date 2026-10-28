@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SGAFU SERECI</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Sistema_De_Gestion_Sereci_Cbba.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" asp-area="" asp-page="/Index">
+                <span class="brand-mark">S</span>
+                <span>
+                    <strong>SGAFU</strong>
+                    <small>SERECI Cochabamba</small>
+                </span>
+            </a>
+            <div class="sidebar-section-label">MENÚ PRINCIPAL</div>
+            @{
+                var currentPage = ViewContext.RouteData.Values["page"]?.ToString();
+            }
+            <nav class="sidebar-nav" aria-label="Navegación principal">
+                <a class="sidebar-link @(currentPage == "/Index" ? "active" : "")" asp-page="/Index">
+                    <span class="nav-icon">⌂</span><span>Dashboard</span>
+                </a>
+                <a class="sidebar-link" href="#">
+                    <span class="nav-icon">▥</span><span>Demanda</span>
+                </a>
+                <a class="sidebar-link @(currentPage == "/Tramites/Index" ? "active" : "")" asp-page="/Tramites/Index">
+                    <span class="nav-icon">▤</span><span>Trámites</span>
+                </a>
+                <a class="sidebar-link @(currentPage == "/PuntosAtencion/Index" ? "active" : "")" asp-page="/PuntosAtencion/Index">
+                    <span class="nav-icon">▦</span><span>Puntos de atención</span>
+                </a>
+                <a class="sidebar-link @(currentPage == "/AsignacionDinamica/Index" ? "active" : "")" asp-page="/AsignacionDinamica/Index">
+                    <span class="nav-icon">⇄</span><span>Asignación dinámica</span>
+                </a>
+                <a class="sidebar-link" href="#">
+                    <span class="nav-icon">◫</span><span>Simulación</span>
+                </a>
+                <a class="sidebar-link" href="#">
+                    <span class="nav-icon">▧</span><span>Resultados</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <span class="status-dot"></span>
+                <span>Sistema operativo</span>
+            </div>
+        </aside>
+        <div class="app-content">
+            <header class="topbar">
+                <div class="breadcrumbs">
+                    <span>SGAFU</span><span class="breadcrumb-separator">/</span>
+                    <strong>@ViewData["Title"]</strong>
+                </div>
+                <div class="topbar-actions">
+                    <span class="simulation-chip"><span class="chip-dot"></span>Datos simulados</span>
+                    <span class="topbar-divider"></span>
+                    <div class="user-profile">
+                        <span class="avatar">AM</span>
+                        <span><strong>Administrador</strong><small>Operador SGAFU</small></span>
+                        <span class="chevron">⌄</span>
+                    </div>
+                </div>
+            </header>
+            <main role="main" class="page-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,321 @@
+@page
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.PuntosAtencionModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Puntos de atención";
+}
+
+<section class="points-page">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">OPERACIÓN</span>
+            <h1>Puntos de atención</h1>
+            <p>Disponibilidad y carga de trabajo de cada ventanilla.</p>
+        </div>
+        <div class="page-heading-actions">
+            <button type="button" class="primary-button page-action"
+                    data-point-create>Nueva ventanilla</button>
+            <a class="secondary-button page-action" asp-page="/PuntosAtencion/HistorialTurnos">
+                Historial de trámites
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="feedback-message feedback-success" role="status">@Model.Mensaje</div>
+    }
+    <div asp-validation-summary="ModelOnly" class="validation-message"></div>
+
+    <div class="summary-strip">
+        <div class="summary-item">
+            <span class="summary-icon summary-green">✓</span>
+            <span><small>Puntos activos</small><strong>@Model.PuntosActivos</strong></span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-icon summary-blue">○</span>
+            <span><small>Puntos inactivos</small><strong>@Model.PuntosInactivos</strong></span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-icon summary-purple">◷</span>
+            <span><small>Turnos pendientes</small><strong>@Model.TurnosPendientes</strong></span>
+        </div>
+    </div>
+    <p class="points-summary-note">
+        Activa permite nuevas asignaciones. Finalizando turno y En descanso conservan su cola,
+        pero no reciben nuevas asignaciones. Puntos no disponibles actualmente: @Model.PuntosNoDisponibles.
+    </p>
+
+    <div class="points-grid">
+        @foreach (var punto in Model.Puntos)
+        {
+            var stateClass = punto.Estado switch
+            {
+                "Activa" => "state-active",
+                "Inactiva" => "state-inactive",
+                "En descanso" => "state-rest",
+                _ => "state-closing"
+            };
+            var editData = JsonSerializer.Serialize(new
+            {
+                punto.Id,
+                punto.Nombre,
+                punto.Estado,
+                TramiteIds = punto.TramitesCompatibles.Select(item => item.Id)
+            });
+            <article class="point-card">
+                <header class="point-card-header">
+                    <div>
+                        <span class="point-id">PUNTO @punto.Id.ToString("D2")</span>
+                        <h2>@punto.Nombre</h2>
+                    </div>
+                    <span class="state-badge @stateClass"><span></span>@punto.Estado</span>
+                </header>
+                <div class="point-metrics">
+                    <div><small>Turnos pendientes</small><strong>@punto.TurnosPendientes</strong></div>
+                    <div><small>Trámites en cola</small><strong>@punto.TiposTramiteEnCola</strong></div>
+                    <div><small>En atención</small><strong>@punto.AtencionesEnCurso</strong></div>
+                </div>
+                <details class="point-details">
+                    <summary>Ver detalle de trámites</summary>
+                    <div class="point-detail-section">
+                        <strong>Trámites en cola</strong>
+                        @if (punto.TramitesEnCola.Count == 0)
+                        {
+                            <span class="point-empty">Sin turnos pendientes.</span>
+                        }
+                        else
+                        {
+                            foreach (var tramite in punto.TramitesEnCola)
+                            {
+                                <span class="point-tramite-row"><span>@tramite.Nombre</span><b>@tramite.TurnosPendientes</b></span>
+                            }
+                        }
+                    </div>
+                    <div class="point-detail-section">
+                        <strong>Turnos en cola</strong>
+                        @if (punto.TurnosEnCola.Count == 0)
+                        {
+                            <span class="point-empty">Sin turnos en cola.</span>
+                        }
+                        else
+                        {
+                            <div class="queue-table-wrap">
+                                <table class="queue-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Pos.</th>
+                                            <th>Código</th>
+                                            <th>Trámite</th>
+                                            <th>Solicitud</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var turno in punto.TurnosEnCola)
+                                        {
+                                            <tr>
+                                                <td><strong>@turno.Posicion<text>º</text></strong></td>
+                                                <td>@turno.CodigoTurno</td>
+                                                <td>@turno.TramiteNombre</td>
+                                                <td>@turno.FechaHoraSolicitud.ToString("HH:mm")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                    <div class="point-detail-section">
+                        <strong>Trámites compatibles</strong>
+                        @if (punto.TramitesCompatibles.Count == 0)
+                        {
+                            <span class="point-empty">No hay compatibilidades configuradas.</span>
+                        }
+                        else
+                        {
+                            <span class="point-compatible-list">
+                                @string.Join(" · ", punto.TramitesCompatibles.Select(item => item.Nombre))
+                            </span>
+                        }
+                    </div>
+                </details>
+                <footer class="point-card-actions">
+                    <button type="button" class="edit-button" data-point-edit="@editData">Editar configuración ↗</button>
+                    @if (punto.Estado == "Inactiva")
+                    {
+                        <form method="post" asp-page-handler="CambiarEstado">
+                            <input type="hidden" name="id" value="@punto.Id" />
+                            <input type="hidden" name="estado" value="Activa" />
+                            <button type="submit" class="state-action">Habilitar</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="CambiarEstado">
+                            <input type="hidden" name="id" value="@punto.Id" />
+                            <input type="hidden" name="estado" value="Inactiva" />
+                            <button type="submit" class="state-action">Deshabilitar</button>
+                        </form>
+                    }
+                </footer>
+            </article>
+        }
+        @if (Model.Puntos.Count == 0)
+        {
+            <div class="empty-state">No hay puntos de atención registrados.</div>
+        }
+    </div>
+</section>
+
+<div class="modal-backdrop" data-modal-backdrop></div>
+<div class="modal point-edit-modal" id="point-edit-modal" role="dialog"
+     aria-modal="true" aria-labelledby="point-edit-title">
+    <form method="post" asp-page-handler="Guardar">
+        <input type="hidden" asp-for="Formulario.Id" id="point-edit-id" />
+        <div class="modal-header">
+            <div><span class="eyebrow">CONFIGURACIÓN</span><h2 id="point-edit-title">Editar ventanilla</h2></div>
+            <button type="button" class="modal-close" data-modal-close aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-field">
+                <label asp-for="Formulario.Nombre">Nombre de la ventanilla</label>
+                <input asp-for="Formulario.Nombre" id="point-edit-name" maxlength="50" required />
+                <span asp-validation-for="Formulario.Nombre" class="validation-message"></span>
+            </div>
+            <div class="modal-field">
+                <label asp-for="Formulario.Estado">Estado operativo</label>
+                <select asp-for="Formulario.Estado" id="point-edit-state">
+                    <option>Activa</option>
+                    <option>Inactiva</option>
+                    <option>Finalizando turno</option>
+                    <option>En descanso</option>
+                </select>
+                <small class="form-help">Solo las ventanillas Activa reciben nuevas asignaciones.</small>
+            </div>
+            <fieldset class="compatibility-fieldset">
+                <legend>Trámites compatibles</legend>
+                @foreach (var tramite in Model.Tramites)
+                {
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="Formulario.TramiteIds" value="@tramite.Id"
+                               data-tramite-id="@tramite.Id" />
+                        <span>@tramite.Nombre</span>
+                    </label>
+                }
+            </fieldset>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="secondary-button" data-modal-close>Cancelar</button>
+            <button type="submit" class="primary-button">Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+<div class="modal-backdrop" data-create-backdrop></div>
+<div class="modal point-edit-modal" id="point-create-modal" role="dialog"
+     aria-modal="true" aria-labelledby="point-create-title">
+    <form method="post" asp-page-handler="Guardar">
+        <input type="hidden" name="Formulario.Id" value="0" />
+        <div class="modal-header">
+            <div><span class="eyebrow">NUEVO REGISTRO</span><h2 id="point-create-title">Nueva ventanilla</h2></div>
+            <button type="button" class="modal-close" data-create-close aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-field">
+                <label for="point-create-name">Nombre de la ventanilla</label>
+                <input id="point-create-name" name="Formulario.Nombre" maxlength="50" required />
+            </div>
+            <div class="modal-field">
+                <label for="point-create-state">Estado operativo inicial</label>
+                <select id="point-create-state" name="Formulario.Estado">
+                    <option>Activa</option>
+                    <option>Inactiva</option>
+                    <option>Finalizando turno</option>
+                    <option>En descanso</option>
+                </select>
+                <small class="form-help">Solo las ventanillas Activa reciben nuevas asignaciones.</small>
+            </div>
+            <fieldset class="compatibility-fieldset">
+                <legend>Trámites compatibles (opcional)</legend>
+                @foreach (var tramite in Model.Tramites)
+                {
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="Formulario.TramiteIds" value="@tramite.Id"
+                               data-create-tramite-id="@tramite.Id" />
+                        <span>@tramite.Nombre</span>
+                    </label>
+                }
+            </fieldset>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="secondary-button" data-create-close>Cancelar</button>
+            <button type="submit" class="primary-button">Crear ventanilla</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const modal = document.getElementById("point-edit-modal");
+            const backdrop = document.querySelector("[data-modal-backdrop]");
+            const openModal = (data) => {
+                document.getElementById("point-edit-id").value = data.Id;
+                document.getElementById("point-edit-name").value = data.Nombre;
+                document.getElementById("point-edit-state").value = data.Estado;
+                const ids = new Set(data.TramiteIds || []);
+                modal.querySelectorAll("[data-tramite-id]").forEach((input) => {
+                    input.checked = ids.has(Number(input.dataset.tramiteId));
+                });
+                modal.classList.add("is-open");
+                backdrop.classList.add("is-open");
+                document.body.classList.add("modal-open");
+                document.getElementById("point-edit-name").focus();
+            };
+            const closeModal = () => {
+                modal.classList.remove("is-open");
+                backdrop.classList.remove("is-open");
+                document.body.classList.remove("modal-open");
+            };
+            document.querySelectorAll("[data-point-edit]").forEach((button) => {
+                button.addEventListener("click", () => openModal(JSON.parse(button.dataset.pointEdit)));
+            });
+            document.querySelectorAll("[data-modal-close]").forEach((button) => {
+                button.addEventListener("click", closeModal);
+            });
+            backdrop.addEventListener("click", closeModal);
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && modal.classList.contains("is-open")) {
+                    closeModal();
+                }
+            });
+
+            const createModal = document.getElementById("point-create-modal");
+            const createBackdrop = document.querySelector("[data-create-backdrop]");
+            const openCreateModal = () => {
+                createModal.querySelector("form").reset();
+                createModal.classList.add("is-open");
+                createBackdrop.classList.add("is-open");
+                document.body.classList.add("modal-open");
+                document.getElementById("point-create-name").focus();
+            };
+            const closeCreateModal = () => {
+                createModal.classList.remove("is-open");
+                createBackdrop.classList.remove("is-open");
+                document.body.classList.remove("modal-open");
+            };
+            document.querySelector("[data-point-create]")
+                .addEventListener("click", openCreateModal);
+            document.querySelectorAll("[data-create-close]")
+                .forEach((button) => button.addEventListener("click", closeCreateModal));
+            createBackdrop.addEventListener("click", closeCreateModal);
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && createModal.classList.contains("is-open")) {
+                    closeCreateModal();
+                }
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,187 @@
+@page "/HistorialTurnos"
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.HistorialTurnosModel
+@{
+    ViewData["Title"] = "Historial de trámites";
+}
+
+<section class="points-page">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">AUDITORÍA OPERATIVA</span>
+            <h1>Historial de trámites</h1>
+            <p>Consulta el orden de llegada, las asignaciones y las reasignaciones realizadas.</p>
+        </div>
+        <a class="secondary-button page-action" asp-page="/PuntosAtencion/Index">Volver a puntos</a>
+    </div>
+
+    <form method="get" class="history-filters panel">
+        <div class="history-filter">
+            <label for="Codigo">Código de turno</label>
+            <input id="Codigo" name="Codigo" value="@Model.Codigo" placeholder="SGAFU-..." />
+        </div>
+        <div class="history-filter">
+            <label for="Desde">Desde</label>
+            <input id="Desde" name="Desde" type="date"
+                   value="@(Model.Desde?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="history-filter">
+            <label for="Hasta">Hasta</label>
+            <input id="Hasta" name="Hasta" type="date"
+                   value="@(Model.Hasta?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="history-filter">
+            <label for="TramiteId">Trámite</label>
+            <select id="TramiteId" name="TramiteId">
+                <option value="">Todos</option>
+                @foreach (var tramite in Model.Tramites)
+                {
+                    <option value="@tramite.Id" selected="@(Model.TramiteId == tramite.Id ? "selected" : null)">
+                        @tramite.Nombre
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="history-filter">
+            <label for="PuntoAtencionId">Ventanilla actual</label>
+            <select id="PuntoAtencionId" name="PuntoAtencionId">
+                <option value="">Todas</option>
+                @foreach (var punto in Model.Puntos)
+                {
+                    <option value="@punto.Id" selected="@(Model.PuntoAtencionId == punto.Id ? "selected" : null)">
+                        @punto.Nombre
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="history-filter">
+            <label for="Estado">Estado</label>
+            <select id="Estado" name="Estado">
+                <option value="">Todos</option>
+                @foreach (var estado in new[] { "En espera", "Asignado", "En atencion", "Atendido", "Cancelado" })
+                {
+                    <option value="@estado" selected="@(Model.Estado == estado ? "selected" : null)">@estado</option>
+                }
+            </select>
+        </div>
+        <div class="history-filter history-filter-actions">
+            <button type="submit" class="primary-button">Filtrar</button>
+            <a asp-page="/PuntosAtencion/HistorialTurnos" class="link-button">Limpiar</a>
+        </div>
+    </form>
+
+    <section class="catalog-card history-card">
+        <div class="catalog-card-header">
+            <div>
+                <h2>Turnos por orden de llegada</h2>
+                <p>El primer registro corresponde al turno recibido más antiguo.</p>
+            </div>
+            <span class="catalog-count">Página @Model.PaginaActual de @Model.TotalPaginas</span>
+        </div>
+        <div class="table-wrap">
+            <table class="catalog-table history-table">
+                <thead>
+                    <tr>
+                        <th>Turno / llegada</th>
+                        <th>Trámite</th>
+                        <th>Asignación inicial</th>
+                        <th>Ventanilla actual</th>
+                        <th>Estado</th>
+                        <th>Movimientos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var turno in Model.Turnos)
+                    {
+                        <tr>
+                            <td>
+                                <strong class="catalog-name">@turno.CodigoTurno</strong>
+                                <small class="catalog-description">@turno.FechaHoraSolicitud.ToString("dd/MM/yyyy HH:mm:ss")</small>
+                            </td>
+                            <td>@turno.TramiteNombre</td>
+                            <td>
+                                <strong>@(turno.VentanillaInicial ?? "No registrada")</strong>
+                                <small class="catalog-description">
+                                    @(turno.FechaHoraAsignacionInicial?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")
+                                </small>
+                            </td>
+                            <td>
+                                <strong>@(turno.VentanillaActual ?? "Sin ventanilla")</strong>
+                                @if (turno.FechaHoraUltimaReasignacion.HasValue)
+                                {
+                                    <small class="catalog-description">
+                                        Última reasignación:
+                                        @turno.FechaHoraUltimaReasignacion.Value.ToString("dd/MM/yyyy HH:mm:ss")
+                                    </small>
+                                }
+                            </td>
+                            <td>
+                                <span class="state-badge state-active"><span></span>@turno.Estado</span>
+                                <small class="catalog-description">
+                                    Inicio:
+                                    @(turno.FechaHoraAtencion?.ToString("dd/MM/yyyy HH:mm:ss") ?? "No registrado")
+                                    <br />
+                                    Finalización: no registrada en el esquema actual
+                                </small>
+                            </td>
+                            <td>
+                                @if (turno.Movimientos.Count == 0)
+                                {
+                                    <span class="point-empty">Sin historial registrado</span>
+                                }
+                                else
+                                {
+                                    <details>
+                                        <summary>@turno.Movimientos.Count movimiento(s)</summary>
+                                        <div class="history-movements">
+                                            @foreach (var movimiento in turno.Movimientos)
+                                            {
+                                                <div class="history-movement">
+                                                    <strong>@movimiento.TipoMovimiento</strong>
+                                                    <span>
+                                                        @(movimiento.VentanillaOrigen ?? "—")
+                                                        →
+                                                        @(movimiento.VentanillaDestino ?? "—")
+                                                    </span>
+                                                    <small>@movimiento.FechaHoraMovimiento.ToString("dd/MM/yyyy HH:mm:ss") · @movimiento.Motivo</small>
+                                                </div>
+                                            }
+                                        </div>
+                                    </details>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Turnos.Count == 0)
+                    {
+                        <tr><td colspan="6" class="empty-table">No hay turnos que coincidan con los filtros.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <nav class="history-pagination" aria-label="Paginación del historial">
+        @if (Model.PaginaActual > 1)
+        {
+            <a class="secondary-button" asp-page="/PuntosAtencion/HistorialTurnos"
+               asp-route-Pagina="@(Model.PaginaActual - 1)"
+               asp-route-Desde="@Model.Desde?.ToString("yyyy-MM-dd")"
+               asp-route-Hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
+               asp-route-TramiteId="@Model.TramiteId"
+               asp-route-PuntoAtencionId="@Model.PuntoAtencionId"
+               asp-route-Estado="@Model.Estado"
+               asp-route-Codigo="@Model.Codigo">Anterior</a>
+        }
+        @if (Model.PaginaActual < Model.TotalPaginas)
+        {
+            <a class="secondary-button" asp-page="/PuntosAtencion/HistorialTurnos"
+               asp-route-Pagina="@(Model.PaginaActual + 1)"
+               asp-route-Desde="@Model.Desde?.ToString("yyyy-MM-dd")"
+               asp-route-Hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
+               asp-route-TramiteId="@Model.TramiteId"
+               asp-route-PuntoAtencionId="@Model.PuntoAtencionId"
+               asp-route-Estado="@Model.Estado"
+               asp-route-Codigo="@Model.Codigo">Siguiente</a>
+        }
+    </nav>
+</section>

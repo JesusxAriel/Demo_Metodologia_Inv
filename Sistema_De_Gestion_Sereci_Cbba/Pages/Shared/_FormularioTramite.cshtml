@@ -1,0 +1,25 @@
+@model Sistema_De_Gestion_Sereci_Cbba.Models.Tramite
+<div class="modal-field">
+    <label for="create-name">Nombre del trámite</label>
+    <input id="create-name" name="Formulario.Nombre" maxlength="100" required />
+</div>
+<div class="modal-field">
+    <label for="create-description">Descripción</label>
+    <textarea id="create-description" name="Formulario.Descripcion" rows="3" maxlength="500"></textarea>
+</div>
+<div class="modal-form-grid">
+    <div class="modal-field">
+        <label for="create-time">Tiempo estimado (min)</label>
+        <input id="create-time" name="Formulario.TiempoEstimadoMinutos" type="number" min="1" required />
+    </div>
+    <div class="modal-field">
+        <label for="create-demand">Nivel de demanda</label>
+        <select id="create-demand" name="Formulario.NivelDemanda" required>
+            <option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option>
+        </select>
+    </div>
+</div>
+<div class="modal-field">
+    <label for="create-status">Estado</label>
+    <select id="create-status" name="Formulario.Estado" required><option>Activo</option><option>Inactivo</option></select>
+</div>

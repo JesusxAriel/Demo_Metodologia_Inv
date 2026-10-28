@@ -1,0 +1,575 @@
+@page
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.AsignacionDinamicaModel
+@{
+    ViewData["Title"] = "Asignación dinámica";
+}
+
+<section class="assignment-page">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">MÓDULO DE OPERACIÓN</span>
+            <h1>Asignación dinámica</h1>
+            <p>Asigna cada trámite a la ventanilla más conveniente según la espera proyectada.</p>
+        </div>
+        <span class="page-status"><span class="status-dot"></span>Motor activo</span>
+    </div>
+
+ 
+
+    <div id="assignment-message" class="feedback-message d-none" role="status"></div>
+
+    <div class="assignment-grid">
+        <section class="panel step-panel">
+            <div class="step-heading">
+                <span class="step-number">01</span>
+                <div>
+                    <span class="eyebrow">PRIMER PASO</span>
+                    <h2>Selecciona el trámite</h2>
+                </div>
+            </div>
+            <form method="post" asp-page-handler="Calcular" id="assignment-form">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="validation-message"></div>
+                <label asp-for="TramiteId" class="field-label">Trámite a asignar</label>
+                <select asp-for="TramiteId" class="field-control" id="tramite-select">
+                    <option value="0" data-time="">Selecciona un trámite</option>
+                    @foreach (var tramite in Model.Tramites)
+                    {
+                        <option value="@tramite.Id" data-time="@tramite.TiempoEstimadoMinutos">
+                            @tramite.Nombre
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="TramiteId" class="validation-message"></span>
+                <label class="field-label mt-4" for="estimated-time">Tiempo estimado de atención</label>
+                <div class="input-with-suffix">
+                    <input class="field-control" id="estimated-time" type="text"
+                           value="--" disabled aria-label="Tiempo estimado de atención" />
+                    <span>min</span>
+                </div>
+                <button type="submit" class="primary-button" id="calculate-button">
+                    <span id="calculate-label">Calcular asignación</span>
+                    <span id="calculate-spinner" class="spinner d-none" aria-hidden="true"></span>
+                    <span class="button-arrow">→</span>
+                </button>
+            </form>
+        </section>
+
+        <section class="panel windows-panel">
+            <div class="step-heading">
+                <span class="step-number">02</span>
+                <div>
+                    <span class="eyebrow">SEGUNDO PASO</span>
+                    <h2>Ventanillas disponibles</h2>
+                    <span class="congestion-legend">
+                        Gris: informativa o no disponible para el trámite seleccionado
+                    </span>
+                </div>
+            </div>
+            <div class="window-list" id="window-list">
+                @foreach (var ventanilla in Model.Ventanillas)
+                {
+                    <div class="window-item" data-window-id="@ventanilla.Id">
+                        <div class="window-item-top">
+                            <strong>@ventanilla.Nombre</strong>
+                            <div class="window-item-actions">
+                                <span class="window-badge d-none">Recomendada</span>
+                                <button type="button" class="window-menu-toggle"
+                                        aria-label="Acciones para @ventanilla.Nombre"
+                                        aria-expanded="false">
+                                    <span aria-hidden="true">⋮</span>
+                                </button>
+                                <div class="window-context-menu" role="menu">
+                                    @if (ventanilla.Estado == "Activa")
+                                    {
+                                        <form method="post" asp-page-handler="CambiarEstado">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="puntoAtencionId"
+                                                   value="@ventanilla.Id" />
+                                            <input type="hidden" name="estado"
+                                                   value="En descanso" />
+                                            <button type="submit" role="menuitem">
+                                                Poner en descanso
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-page-handler="CambiarEstado">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="puntoAtencionId"
+                                                   value="@ventanilla.Id" />
+                                            <input type="hidden" name="estado"
+                                                   value="Finalizando turno" />
+                                            <button type="submit" role="menuitem">
+                                                Finalizar turno
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (ventanilla.Estado == "En descanso")
+                                    {
+                                        <form method="post" asp-page-handler="CambiarEstado">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="puntoAtencionId"
+                                                   value="@ventanilla.Id" />
+                                            <input type="hidden" name="estado" value="Activa" />
+                                            <button type="submit" role="menuitem">
+                                                Reanudar asignaciones
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (ventanilla.Estado == "Finalizando turno")
+                                    {
+                                        <form method="post" asp-page-handler="CambiarEstado">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="puntoAtencionId"
+                                                   value="@ventanilla.Id" />
+                                            <input type="hidden" name="estado" value="Activa" />
+                                            <button type="submit" role="menuitem">
+                                                Reabrir asignaciones
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="congestion-status congestion-@ventanilla.NivelCongestion.ToLowerInvariant()">
+                            <span class="congestion-dot"
+                                  aria-label="Congestión @ventanilla.NivelCongestion"></span>
+                            <span>@ventanilla.NivelCongestion</span>
+                        </div>
+                        <span class="window-state">@ventanilla.Estado</span>
+                        <div class="window-metrics">
+                            <div class="queue-info">
+                                <span>En cola</span>
+                                <strong>@ventanilla.UsuariosEnCola</strong>
+                            </div>
+                            <div class="queue-info">
+                                <span>Espera</span>
+                                <strong>@ventanilla.TiempoEsperaEstimadoMinutos min</strong>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (Model.Ventanillas.Count == 0)
+                {
+                    <div class="empty-state">No hay ventanillas operativas disponibles.</div>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div id="confirmation-success" class="confirmation-success d-none" role="status">
+        <div class="recommendation-check">✓</div>
+        <div>
+            <strong>Asignación confirmada</strong>
+            <p id="confirmation-details"></p>
+        </div>
+    </div>
+</section>
+
+<div id="assignment-modal-backdrop" class="modal-backdrop" aria-hidden="true"></div>
+<section id="assignment-modal" class="modal assignment-modal" role="dialog"
+         aria-modal="true" aria-labelledby="assignment-modal-title"
+         aria-describedby="assignment-modal-description" tabindex="-1">
+    <header class="modal-header">
+        <div>
+            <span class="eyebrow">RECOMENDACIÓN DEL MOTOR</span>
+            <h2 id="assignment-modal-title">Confirmar asignación</h2>
+        </div>
+        <button type="button" class="modal-close" id="close-assignment-modal"
+                aria-label="Cerrar ventana de confirmación">&times;</button>
+    </header>
+    <div class="modal-body">
+        <p id="assignment-modal-description" class="modal-intro">
+            Esta es la ventanilla recomendada por el motor para el trámite seleccionado.
+        </p>
+        <div id="selected-window" class="selected-window">
+            <div class="selected-window-heading">
+                <div class="recommendation-check" aria-hidden="true">✓</div>
+                <div>
+                    <span class="eyebrow">VENTANILLA SELECCIONADA</span>
+                    <h3 id="recommended-window"></h3>
+                </div>
+            </div>
+            <div class="selected-window-metrics">
+                <div><span>Usuarios en espera</span><strong id="selected-queue"></strong></div>
+                <div><span>Espera estimada</span><strong id="estimated-wait"></strong></div>
+                <div><span>Semáforo</span><strong id="congestion-level"></strong></div>
+                <div><span>Compatibilidad</span><strong id="compatibility"></strong></div>
+            </div>
+            <p id="recommendation-confirmation" class="selection-note"></p>
+        </div>
+        <section id="alternatives-panel" class="modal-alternatives d-none"
+                 aria-labelledby="alternatives-title">
+            <div class="alternatives-heading">
+                <div>
+                    <span class="eyebrow">SELECCIÓN MANUAL</span>
+                    <h3 id="alternatives-title">Otras ventanillas compatibles</h3>
+                </div>
+                <button type="button" class="link-button" id="back-to-recommendation">
+                    Volver a recomendada
+                </button>
+            </div>
+            <div id="alternatives-list" class="alternatives-list"></div>
+        </section>
+        <form method="post" asp-page-handler="Confirmar" id="confirmation-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tramiteId" id="confirmation-tramite-id" />
+            <input type="hidden" name="puntoAtencionId" id="confirmation-punto-id" />
+            <input type="hidden" name="tiempoEsperaEstimadoMinutos"
+                   id="confirmation-wait-time" />
+            <div class="modal-actions">
+                <button type="button" class="link-button" id="show-alternatives">
+                    Ver otras opciones
+                </button>
+                <button type="button" class="secondary-button modal-cancel"
+                        id="cancel-assignment">Cancelar</button>
+                <button type="submit" class="primary-button" id="confirm-assignment">
+                    <span id="confirm-label">Confirmar asignación</span>
+                    <span id="confirm-spinner" class="spinner d-none"
+                          aria-hidden="true"></span>
+                    <span>→</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("assignment-form");
+            const select = document.getElementById("tramite-select");
+            const estimatedTime = document.getElementById("estimated-time");
+            const button = document.getElementById("calculate-button");
+            const label = document.getElementById("calculate-label");
+            const spinner = document.getElementById("calculate-spinner");
+            const message = document.getElementById("assignment-message");
+            const modal = document.getElementById("assignment-modal");
+            const backdrop = document.getElementById("assignment-modal-backdrop");
+            const closeModalButton = document.getElementById("close-assignment-modal");
+            const cancelButton = document.getElementById("cancel-assignment");
+            const confirmationForm = document.getElementById("confirmation-form");
+            const confirmationButton = document.getElementById("confirm-assignment");
+            const confirmationLabel = document.getElementById("confirm-label");
+            const confirmationSpinner = document.getElementById("confirm-spinner");
+            const confirmationSuccess = document.getElementById("confirmation-success");
+            const alternativesPanel = document.getElementById("alternatives-panel");
+            const alternativesList = document.getElementById("alternatives-list");
+            const alternativesButton = document.getElementById("show-alternatives");
+            const backButton = document.getElementById("back-to-recommendation");
+            let recommendation = null;
+            let confirming = false;
+            let lastFocusedElement = null;
+            let openWindowMenu = null;
+
+            const closeWindowMenu = () => {
+                if (!openWindowMenu) {
+                    return;
+                }
+
+                openWindowMenu.classList.remove("is-open");
+                openWindowMenu.previousElementSibling.setAttribute(
+                    "aria-expanded", "false");
+                openWindowMenu = null;
+            };
+
+            document.querySelectorAll(".window-menu-toggle").forEach((toggle) => {
+                toggle.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    const menu = toggle.nextElementSibling;
+                    if (openWindowMenu === menu) {
+                        closeWindowMenu();
+                        return;
+                    }
+
+                    closeWindowMenu();
+                    menu.classList.add("is-open");
+                    toggle.setAttribute("aria-expanded", "true");
+                    openWindowMenu = menu;
+                });
+            });
+
+            document.querySelectorAll(".window-context-menu form").forEach((menuForm) => {
+                menuForm.addEventListener("submit", () => closeWindowMenu());
+            });
+
+            document.addEventListener("click", (event) => {
+                if (!event.target.closest(".window-item-actions")) {
+                    closeWindowMenu();
+                }
+            });
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    closeWindowMenu();
+                }
+            });
+
+            select.addEventListener("change", () => {
+                estimatedTime.value = select.selectedOptions[0]?.dataset.time || "--";
+            });
+
+            const setBusy = (busy) => {
+                button.disabled = busy;
+                label.classList.toggle("d-none", busy);
+                spinner.classList.toggle("d-none", !busy);
+            };
+
+            const showMessage = (text, type) => {
+                message.textContent = text;
+                message.className = `feedback-message feedback-${type}`;
+            };
+
+            const highlightRecommendation = (id, isRecommendation) => {
+                document.querySelectorAll(".window-item").forEach((item) => {
+                    const selected = item.dataset.windowId === String(id);
+                    item.classList.toggle("recommended", selected && isRecommendation);
+                    item.querySelector(".window-badge").classList.toggle(
+                        "d-none", !(selected && isRecommendation));
+                });
+            };
+
+            const setModalOpen = (open) => {
+                modal.classList.toggle("is-open", open);
+                backdrop.classList.toggle("is-open", open);
+                backdrop.setAttribute("aria-hidden", String(!open));
+                document.body.classList.toggle("modal-open", open);
+                if (open) {
+                    lastFocusedElement = document.activeElement;
+                    modal.focus();
+                } else if (lastFocusedElement) {
+                    lastFocusedElement.focus();
+                }
+            };
+
+            const clearTemporaryRecommendation = () => {
+                recommendation = null;
+                highlightRecommendation(null, false);
+                document.getElementById("confirmation-tramite-id").value = "";
+                document.getElementById("confirmation-punto-id").value = "";
+                document.getElementById("confirmation-wait-time").value = "";
+                showRecommendationView();
+            };
+
+            const showRecommendationView = () => {
+                alternativesPanel.classList.add("d-none");
+                document.getElementById("selected-window").classList.remove("d-none");
+                document.getElementById("confirmation-form").classList.remove("d-none");
+                alternativesButton.classList.remove("d-none");
+                modal.classList.remove("modal-expanded");
+            };
+
+            const refreshWindows = (windows) => {
+                windows.forEach((window) => {
+                    const item = document.querySelector(
+                        `.window-item[data-window-id="${window.id}"]`);
+                    if (!item) {
+                        return;
+                    }
+
+                    const congestion = item.querySelector(".congestion-status");
+                    congestion.className =
+                        `congestion-status congestion-${window.nivelCongestion.toLowerCase()}`;
+                    congestion.querySelector("span:last-child").textContent =
+                        window.nivelCongestion;
+                    congestion.querySelector(".congestion-dot").setAttribute(
+                        "aria-label", `Congestión ${window.nivelCongestion}`);
+                    item.querySelector(".window-state").textContent = window.estado;
+                    item.querySelector(".queue-info strong").textContent =
+                        window.usuariosEnCola;
+                    item.querySelectorAll(".queue-info strong")[1].textContent =
+                        `${window.tiempoEsperaEstimadoMinutos} min`;
+                });
+            };
+
+            const setRecommendation = (result, explanation, isRecommendation = true) => {
+                recommendation = result;
+                document.getElementById("confirmation-tramite-id").value =
+                    result.tramiteId;
+                document.getElementById("confirmation-punto-id").value =
+                    result.puntoAtencionId ?? "";
+                document.getElementById("confirmation-wait-time").value =
+                    result.tiempoEsperaEstimadoMinutos;
+                document.getElementById("recommended-window").textContent =
+                    result.nombre ?? result.nombreVentanilla ?? "ninguna ventanilla";
+                document.getElementById("estimated-wait").textContent =
+                    `${result.tiempoEsperaEstimadoMinutos} min`;
+                document.getElementById("selected-queue").textContent =
+                    result.usuariosEnCola;
+                document.getElementById("congestion-level").textContent =
+                    result.nivelCongestion;
+                document.getElementById("compatibility").textContent =
+                    result.compatibilidad ?? "Sí";
+                document.getElementById("recommendation-confirmation").textContent =
+                    explanation;
+                highlightRecommendation(result.puntoAtencionId, isRecommendation);
+                showRecommendationView();
+                confirmationButton.disabled = false;
+            };
+
+            const renderAlternatives = (windows, result) => {
+                alternativesList.replaceChildren();
+                const alternatives = windows
+                    .filter((window) =>
+                        window.esCompatible &&
+                        window.puedeRecibirAsignaciones &&
+                        window.id !== result.puntoAtencionId)
+                    .sort((left, right) =>
+                        left.tiempoEsperaEstimadoMinutos -
+                            right.tiempoEsperaEstimadoMinutos ||
+                        left.usuariosEnCola - right.usuariosEnCola ||
+                        left.id - right.id);
+
+                if (!alternatives.length) {
+                    alternativesList.innerHTML =
+                        '<p class="empty-state">No existen alternativas compatibles disponibles.</p>';
+                    return;
+                }
+
+                alternatives.forEach((window) => {
+                    const item = document.createElement("div");
+                    item.className = "alternative-item";
+                    item.innerHTML =
+                        `<div><strong></strong><span class="alternative-meta"></span></div>` +
+                        `<span class="congestion-status congestion-${window.nivelCongestion.toLowerCase()}">` +
+                        `<span class="congestion-dot"></span><span></span></span>` +
+                        `<button type="button" class="link-button">Seleccionar</button>`;
+                    item.querySelector("strong").textContent = window.nombre;
+                    item.querySelector(".alternative-meta").textContent =
+                        `${window.usuariosEnCola} en cola · ` +
+                        `${window.tiempoEsperaEstimadoMinutos} min`;
+                    item.querySelector(".congestion-status span:last-child").textContent =
+                        window.nivelCongestion;
+                    item.querySelector("button").addEventListener("click", () => {
+                        setRecommendation({
+                            tramiteId: result.tramiteId,
+                            puntoAtencionId: window.id,
+                            nombre: window.nombre,
+                            usuariosEnCola: window.usuariosEnCola,
+                            tiempoEsperaEstimadoMinutos:
+                                window.tiempoEsperaEstimadoMinutos,
+                            compatibilidad: "Sí",
+                            nivelCongestion: window.nivelCongestion
+                        }, "Selección manual del encargado. Se validará nuevamente al confirmar.",
+                        false);
+                        showMessage("Ventanilla alternativa seleccionada.", "success");
+                        alternativesPanel.classList.add("d-none");
+                    });
+                    alternativesList.appendChild(item);
+                });
+            };
+
+            alternativesButton.addEventListener("click", () => {
+                document.getElementById("selected-window").classList.add("d-none");
+                alternativesPanel.classList.remove("d-none");
+                alternativesButton.classList.add("d-none");
+                modal.classList.add("modal-expanded");
+                alternativesList.querySelector("button")?.focus();
+            });
+
+            backButton.addEventListener("click", showRecommendationView);
+            closeModalButton.addEventListener("click", () => {
+                if (!confirming) {
+                    clearTemporaryRecommendation();
+                    setModalOpen(false);
+                }
+            });
+            cancelButton.addEventListener("click", () => {
+                if (!confirming) {
+                    clearTemporaryRecommendation();
+                    setModalOpen(false);
+                }
+            });
+            backdrop.addEventListener("click", () => {
+                if (!confirming) {
+                    clearTemporaryRecommendation();
+                    setModalOpen(false);
+                }
+            });
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && modal.classList.contains("is-open") &&
+                    !confirming) {
+                    clearTemporaryRecommendation();
+                    setModalOpen(false);
+                }
+            });
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                message.className = "feedback-message d-none";
+                setBusy(true);
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        body: new FormData(form)
+                    });
+                    const payload = await response.json();
+                    if (!response.ok) {
+                        throw new Error(payload.mensaje ?? "No fue posible calcular la asignación.");
+                    }
+
+                    const result = payload.resultado;
+                    const compatible = result.compatibilidad === "Sí";
+                    setRecommendation(result, result.explicacion);
+                    renderAlternatives(payload.ventanillas, result);
+                    confirmationSuccess.classList.add("d-none");
+                    confirmationButton.disabled = !compatible;
+                    modal.classList.toggle("modal-expanded", false);
+                    if (compatible) {
+                        setModalOpen(true);
+                    }
+                    showMessage(
+                        compatible ? "Asignación calculada correctamente." : "No hay una coincidencia disponible.",
+                        compatible ? "success" : "warning");
+                } catch (error) {
+                    showMessage(error.message, "danger");
+                } finally {
+                    setBusy(false);
+                }
+            });
+
+            confirmationForm.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                if (!recommendation || recommendation.compatibilidad !== "Sí" || confirming) {
+                    showMessage("Calcule una recomendación válida antes de confirmar.", "warning");
+                    return;
+                }
+
+                confirming = true;
+                confirmationButton.disabled = true;
+                confirmationLabel.classList.add("d-none");
+                confirmationSpinner.classList.remove("d-none");
+
+                try {
+                    const response = await fetch(confirmationForm.action, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        body: new FormData(confirmationForm)
+                    });
+                    const payload = await response.json();
+                    if (!response.ok) {
+                        throw new Error(payload.mensaje ?? "No se pudo confirmar la asignación.");
+                    }
+
+                    refreshWindows(payload.ventanillas);
+                    document.getElementById("confirmation-details").textContent =
+                        `Turno ${payload.codigoTurno} · ${payload.tramiteNombre} · ` +
+                        `${payload.ventanillaNombre} · espera estimada ` +
+                        `${payload.tiempoEsperaEstimadoMinutos} min.`;
+                    confirmationSuccess.classList.remove("d-none");
+                    showMessage("La asignación fue confirmada y guardada correctamente.", "success");
+                    setModalOpen(false);
+                } catch (error) {
+                    showMessage(error.message, "danger");
+                    confirmationButton.disabled = false;
+                } finally {
+                    confirming = false;
+                    confirmationLabel.classList.remove("d-none");
+                    confirmationSpinner.classList.add("d-none");
+                }
+            });
+        })();
+    </script>
+}

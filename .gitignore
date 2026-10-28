@@ -1,0 +1,28 @@
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+**/appsettings.Local.json
+
+# Logs and temporary files
+*.log
+*.tmp
+*.cache
+
+# OS metadata
+Thumbs.db
+ehthumbs.db
+.DS_Store
+
+# Archivos de configuración con credenciales
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+
+# Archivos generados por .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo

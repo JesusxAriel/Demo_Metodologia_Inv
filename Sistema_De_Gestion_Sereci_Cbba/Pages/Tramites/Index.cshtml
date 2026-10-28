@@ -1,0 +1,181 @@
+@page
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.TramitesModel
+@{
+    ViewData["Title"] = "Trámites";
+}
+
+<section class="catalog-page">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">CONFIGURACIÓN DEL SISTEMA</span>
+            <h1>Tipos de trámite</h1>
+            <p>Administra los servicios disponibles y sus tiempos de atención.</p>
+        </div>
+        <button type="button" class="primary-button page-action" data-modal-open="create-modal">
+            <span>+</span> Nuevo trámite
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="feedback-message feedback-success" role="status">@Model.Mensaje</div>
+    }
+
+    <div class="summary-strip">
+        <div class="summary-item">
+            <span class="summary-icon summary-blue">▤</span>
+            <span><small>Trámites configurados</small><strong>@Model.TotalTramites</strong></span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-icon summary-green">✓</span>
+            <span><small>Trámites activos</small><strong>@Model.TramitesActivos</strong></span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-icon summary-purple">◷</span>
+            <span><small>Tiempo promedio estimado</small><strong>@Model.TiempoPromedioEstimado.ToString("0.#") <em>min</em></strong></span>
+        </div>
+    </div>
+
+    <section class="catalog-card">
+        <div class="catalog-card-header">
+            <div>
+                <h2>Catálogo de trámites</h2>
+                <p>Servicios registrados en el sistema</p>
+            </div>
+            <span class="catalog-count">@Model.TotalTramites registros</span>
+        </div>
+        <div class="table-wrap">
+            <table class="catalog-table">
+                <thead>
+                    <tr>
+                        <th>Nombre del trámite</th>
+                        <th>Tiempo estimado</th>
+                        <th>Nivel de demanda</th>
+                        <th>Estado</th>
+                        <th><span class="visually-hidden">Acciones</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tramite in Model.Tramites)
+                    {
+                        var demandClass = tramite.NivelDemanda.ToLowerInvariant();
+                        var editData = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            tramite.Id,
+                            tramite.Nombre,
+                            tramite.Descripcion,
+                            tramite.TiempoEstimadoMinutos,
+                            tramite.NivelDemanda,
+                            tramite.Estado
+                        });
+                        <tr>
+                            <td>
+                                <strong class="catalog-name">@tramite.Nombre</strong>
+                                <small class="catalog-description">@(tramite.Descripcion ?? "Sin descripción registrada")</small>
+                            </td>
+                            <td><span class="time-value"><span>◷</span>@tramite.TiempoEstimadoMinutos min</span></td>
+                            <td><span class="demand-badge demand-@demandClass">@tramite.NivelDemanda</span></td>
+                            <td>
+                                <span class="state-badge @(tramite.Estado == "Activo" ? "state-active" : "state-inactive")">
+                                    <span></span>@tramite.Estado
+                                </span>
+                            </td>
+                            <td class="actions-cell">
+                                <button type="button" class="edit-button" data-modal-open="edit-modal"
+                                        data-tramite="@editData">Editar <span>↗</span></button>
+                                <form method="post" asp-page-handler="CambiarEstado" class="inline-form">
+                                    <input type="hidden" name="id" value="@tramite.Id" />
+                                    <button type="submit" class="state-action">
+                                        @(tramite.Estado == "Activo" ? "Desactivar" : "Activar")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Tramites.Count == 0)
+                    {
+                        <tr><td colspan="5" class="empty-table">No hay trámites registrados.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+
+<div class="modal-backdrop" data-modal-backdrop></div>
+<div class="modal" id="create-modal" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
+    <form method="post" asp-page-handler="Guardar">
+        <div class="modal-header">
+            <div><span class="eyebrow">NUEVO REGISTRO</span><h2 id="create-modal-title">Nuevo trámite</h2></div>
+            <button type="button" class="modal-close" data-modal-close aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body">@await Html.PartialAsync(
+            "_FormularioTramite",
+            new Sistema_De_Gestion_Sereci_Cbba.Models.Tramite())</div>
+        <div class="modal-footer">
+            <button type="button" class="secondary-button" data-modal-close>Cancelar</button>
+            <button type="submit" class="primary-button">Guardar trámite</button>
+        </div>
+    </form>
+</div>
+
+<div class="modal" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <form method="post" asp-page-handler="Guardar">
+        <input type="hidden" name="Formulario.Id" id="edit-id" />
+        <div class="modal-header">
+            <div><span class="eyebrow">CONFIGURACIÓN</span><h2 id="edit-modal-title">Editar trámite</h2></div>
+            <button type="button" class="modal-close" data-modal-close aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-field"><label for="edit-name">Nombre del trámite</label><input id="edit-name" name="Formulario.Nombre" required maxlength="100" /></div>
+            <div class="modal-field"><label for="edit-description">Descripción</label><textarea id="edit-description" name="Formulario.Descripcion" rows="3" maxlength="500"></textarea></div>
+            <div class="modal-form-grid">
+                <div class="modal-field"><label for="edit-time">Tiempo estimado (min)</label><input id="edit-time" name="Formulario.TiempoEstimadoMinutos" type="number" min="1" required /></div>
+                <div class="modal-field"><label for="edit-demand">Nivel de demanda</label><select id="edit-demand" name="Formulario.NivelDemanda" required><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+            </div>
+            <div class="modal-field"><label for="edit-status">Estado</label><select id="edit-status" name="Formulario.Estado" required><option>Activo</option><option>Inactivo</option></select></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="secondary-button" data-modal-close>Cancelar</button>
+            <button type="submit" class="primary-button">Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const backdrop = document.querySelector("[data-modal-backdrop]");
+            const openModal = (id) => {
+                document.getElementById(id).classList.add("is-open");
+                backdrop.classList.add("is-open");
+                document.body.classList.add("modal-open");
+            };
+            const closeModals = () => {
+                document.querySelectorAll(".modal.is-open").forEach(modal => modal.classList.remove("is-open"));
+                backdrop.classList.remove("is-open");
+                document.body.classList.remove("modal-open");
+            };
+            document.querySelectorAll("[data-modal-open]").forEach(button => {
+                button.addEventListener("click", () => {
+                    const data = button.dataset.tramite;
+                    if (data) {
+                        const tramite = JSON.parse(data);
+                        document.getElementById("edit-id").value = tramite.Id;
+                        document.getElementById("edit-name").value = tramite.Nombre;
+                        document.getElementById("edit-description").value = tramite.Descripcion ?? "";
+                        document.getElementById("edit-time").value = tramite.TiempoEstimadoMinutos;
+                        document.getElementById("edit-demand").value = tramite.NivelDemanda;
+                        document.getElementById("edit-status").value = tramite.Estado;
+                    }
+                    openModal(button.dataset.modalOpen);
+                });
+            });
+            document.querySelectorAll("[data-modal-close]").forEach(button => button.addEventListener("click", closeModals));
+            backdrop.addEventListener("click", closeModals);
+            document.addEventListener("keydown", event => { if (event.key === "Escape") closeModals(); });
+        })();
+    </script>
+}

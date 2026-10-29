@@ -3,7 +3,8 @@ using Sistema_De_Gestion_Sereci_Cbba.Data;
 using Sistema_De_Gestion_Sereci_Cbba.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
+var test = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine(test);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "No se encontró la cadena de conexión 'DefaultConnection'.");

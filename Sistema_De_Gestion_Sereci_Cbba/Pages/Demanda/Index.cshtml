@@ -1,0 +1,91 @@
+﻿@page
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.DemandaModel
+
+@{
+    ViewData["Title"] = "Demanda";
+}
+
+<div class="container-fluid">
+
+    <div class="mb-4">
+        <h2>Análisis de demanda</h2>
+        <p class="text-muted">
+            Comportamiento de la demanda de usuarios por horarios y tipos de trámite.
+        </p>
+    </div>
+
+    <div class="row mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <span class="text-muted">Demanda total</span>
+                    <h3>@Model.DemandaTotal</h3>
+                    <small>usuarios registrados</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <span class="text-muted">Promedio</span>
+                    <h3>@Model.PromedioDemanda.ToString("0.0")</h3>
+                    <small>usuarios por registro</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <span class="text-muted">Mayor demanda</span>
+                    <h3>@Model.FranjaMayorDemanda</h3>
+                    <small>franja de mayor afluencia</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <strong>Registros de demanda</strong>
+        </div>
+
+        <div class="card-body">
+
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Trámite</th>
+                        <th>Usuarios</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var registro in Model.Registros)
+                    {
+                        <tr>
+                            <td>@registro.Fecha.ToString("dd/MM/yyyy")</td>
+
+                            <td>@registro.FranjaHoraria</td>
+
+                            <td>@registro.Tramite?.Nombre </td>
+
+                            <td>@registro.CantidadUsuarios </td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+
+</div>

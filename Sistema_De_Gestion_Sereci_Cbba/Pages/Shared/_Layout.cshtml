@@ -27,8 +27,10 @@
                 <a class="sidebar-link @(currentPage == "/Index" ? "active" : "")" asp-page="/Index">
                     <span class="nav-icon">⌂</span><span>Dashboard</span>
                 </a>
-                <a class="sidebar-link" href="#">
-                    <span class="nav-icon">▥</span><span>Demanda</span>
+                <a class="sidebar-link @(currentPage == "/Demanda/Index" ? "active" : "")"
+                   asp-page="/Demanda/Index">
+                    <span class="nav-icon">▥</span>
+                    <span>Demanda</span>
                 </a>
                 <a class="sidebar-link @(currentPage == "/Tramites/Index" ? "active" : "")" asp-page="/Tramites/Index">
                     <span class="nav-icon">▤</span><span>Trámites</span>

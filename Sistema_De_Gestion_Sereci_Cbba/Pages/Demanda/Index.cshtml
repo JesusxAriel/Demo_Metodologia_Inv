@@ -12,6 +12,61 @@
         <p class="text-muted">
             Comportamiento de la demanda de usuarios por horarios y tipos de trámite.
         </p>
+        <form method="get" class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <div class="row align-items-end">
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Fecha
+                        </label>
+
+                        <input asp-for="FechaFiltro"
+                               type="date"
+                               class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Tipo de trámite
+                        </label>
+
+                        <select asp-for="TramiteFiltroId"
+                                class="form-select">
+
+                            <option value="">
+                                Todos los trámites
+                            </option>
+
+                            @foreach (var tramite in Model.Tramites)
+                            {
+                                <option value="@tramite.Id">
+                                    @tramite.Nombre
+                                </option>
+                            }
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Aplicar filtros
+                        </button>
+
+                        <a asp-page="/Demanda/Index"
+                           class="btn btn-outline-secondary">
+                            Limpiar
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </form>
     </div>
 
     <div class="row mb-4">
@@ -47,7 +102,46 @@
         </div>
 
     </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
 
+        <h4 class="mb-0">
+            Registros de demanda
+        </h4>
+
+        <button type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#modalDemanda">
+
+            + Registrar demanda
+
+        </button>
+
+    </div>
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Demanda por franja horaria</strong>
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.Registros.Count == 0)
+            {
+                <div class="text-center text-muted py-4">
+                    No existen datos para generar el gráfico.
+                </div>
+            }
+            else
+            {
+                <div style="height: 320px;">
+                    <canvas id="graficoDemanda"></canvas>
+                </div>
+            }
+
+        </div>
+
+    </div>
     <div class="card shadow-sm">
 
         <div class="card-header">
@@ -67,7 +161,20 @@
                 </thead>
 
                 <tbody>
+                    @if (Model.Registros.Count == 0)
+                    {
+                     <tr>
+                     <td colspan="4"
+                     class="text-center text-muted py-4">
 
+                       No existen registros de demanda
+                       para los filtros seleccionados.
+
+                    </td>
+                    </tr>
+                    }
+                    else
+                    {
                     @foreach (var registro in Model.Registros)
                     {
                         <tr>
@@ -80,7 +187,7 @@
                             <td>@registro.CantidadUsuarios </td>
                         </tr>
                     }
-
+                    }
                 </tbody>
             </table>
 
@@ -88,4 +195,230 @@
 
     </div>
 
+    <div class="modal fade"
+         id="modalDemanda"
+         tabindex="-1"
+         aria-hidden="true">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <form method="post"
+                      asp-page-handler="Guardar">
+
+                    <div class="modal-header">
+
+                        <h5 class="modal-title">
+                            Registrar demanda
+                        </h5>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal">
+                        </button>
+
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger mb-3">
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label asp-for="Formulario.Fecha"
+                                   class="form-label">
+                                Fecha
+                            </label>
+
+                            <input asp-for="Formulario.Fecha"
+                                   type="date"
+                                   class="form-control" />
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label asp-for="Formulario.TramiteId"
+                                   class="form-label">
+                                Tipo de trámite
+                            </label>
+
+                            <select asp-for="Formulario.TramiteId"
+                                    class="form-select">
+
+                                <option value="">
+                                    Seleccione un trámite
+                                </option>
+
+                                @foreach (var tramite in Model.Tramites)
+                                {
+                                    <option value="@tramite.Id">
+                                        @tramite.Nombre
+                                    </option>
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="Formulario.TramiteId"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label asp-for="Formulario.FranjaHoraria"
+                                   class="form-label">
+                                Franja horaria
+                            </label>
+
+                            <select asp-for="Formulario.FranjaHoraria"
+                                    class="form-select">
+
+                                <option value="">
+                                    Seleccione una franja
+                                </option>
+
+                                <option value="08:00-09:00">
+                                    08:00 - 09:00
+                                </option>
+
+                                <option value="09:00-10:00">
+                                    09:00 - 10:00
+                                </option>
+
+                                <option value="10:00-11:00">
+                                    10:00 - 11:00
+                                </option>
+
+                                <option value="11:00-12:00">
+                                    11:00 - 12:00
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="Formulario.FranjaHoraria"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label asp-for="Formulario.CantidadUsuarios"
+                                   class="form-label">
+                                Cantidad de usuarios
+                            </label>
+
+                            <input asp-for="Formulario.CantidadUsuarios"
+                                   type="number"
+                                   min="0"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Formulario.CantidadUsuarios"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Guardar
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
 </div>
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    @if (Model.Registros.Count > 0)
+    {
+        <script>
+
+            const franjas = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                                Model.FranjasGrafico
+                        )
+                );
+
+            const usuarios = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                                Model.UsuariosGrafico
+                        )
+                );
+
+            const canvas = document.getElementById('graficoDemanda');
+
+            new Chart(canvas, {
+                type: 'bar',
+
+                data: {
+                    labels: franjas,
+
+                    datasets: [{
+                        label: 'Cantidad de usuarios',
+                        data: usuarios,
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                precision: 0
+                            },
+
+                            title: {
+                                display: true,
+                                text: 'Usuarios'
+                            }
+                        },
+
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Franja horaria'
+                            }
+                        }
+                    }
+                }
+            });
+
+        </script>
+    }
+}

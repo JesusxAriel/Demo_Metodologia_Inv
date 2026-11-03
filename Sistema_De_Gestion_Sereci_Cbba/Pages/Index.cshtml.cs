@@ -2,10 +2,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Sistema_De_Gestion_Sereci_Cbba.Data;
 using Sistema_De_Gestion_Sereci_Cbba.Models;
+using Sistema_De_Gestion_Sereci_Cbba.Services;
 
 namespace Sistema_De_Gestion_Sereci_Cbba.Pages;
 
-public class IndexModel(ApplicationDbContext context) : PageModel
+public class IndexModel(
+    ApplicationDbContext context,
+    IDynamicAssignmentServicio dynamicAssignmentServicio) : PageModel
 {
     public int DemandaTotal { get; private set; }
 
@@ -13,27 +16,41 @@ public class IndexModel(ApplicationDbContext context) : PageModel
 
     public int TramitesActivos { get; private set; }
 
-    public double UtilizacionPromedio { get; private set; }
+    public int TurnosPendientes { get; private set; }
 
     public string FranjaMayorDemanda { get; private set; } = "-";
+
+    public DateOnly? FechaJornada { get; private set; }
 
     public List<string> FranjasGrafico { get; private set; } = [];
 
     public List<int> UsuariosGrafico { get; private set; } = [];
 
-    public IReadOnlyList<PuntoAtencion> PuntosAtencion { get; private set; } = [];
+    public IReadOnlyList<EstadoVentanillaDto> Ventanillas { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
         await CargarDemandaAsync();
-        await CargarPuntosAtencionAsync();
+        await CargarVentanillasAsync();
         await CargarTramitesAsync();
     }
 
     private async Task CargarDemandaAsync()
     {
+        FechaJornada = await context.RegistrosDemanda
+            .AsNoTracking()
+            .OrderByDescending(r => r.Fecha)
+            .Select(r => (DateOnly?)r.Fecha)
+            .FirstOrDefaultAsync();
+
+        if (!FechaJornada.HasValue)
+        {
+            return;
+        }
+
         var registros = await context.RegistrosDemanda
             .AsNoTracking()
+            .Where(r => r.Fecha == FechaJornada.Value)
             .ToListAsync();
 
         if (registros.Count == 0)
@@ -70,21 +87,16 @@ public class IndexModel(ApplicationDbContext context) : PageModel
         FranjaMayorDemanda = mayor.Franja;
     }
 
-    private async Task CargarPuntosAtencionAsync()
+    private async Task CargarVentanillasAsync()
     {
-        PuntosAtencion = await context.PuntosAtencion
-            .AsNoTracking()
-            .OrderBy(p => p.Id)
-            .ToListAsync();
+        Ventanillas = await dynamicAssignmentServicio
+            .ObtenerEstadosVentanillasAsync();
 
-        PuntosActivos = PuntosAtencion.Count(p =>
-            p.Estado == "Activa");
+        PuntosActivos = Ventanillas.Count(v =>
+            v.Estado == "Activa");
 
-        if (PuntosAtencion.Count > 0)
-        {
-            UtilizacionPromedio = PuntosAtencion
-                .Average(p => p.CargaActualPorcentaje);
-        }
+        TurnosPendientes = Ventanillas.Sum(v =>
+            v.UsuariosEnCola);
     }
 
     private async Task CargarTramitesAsync()

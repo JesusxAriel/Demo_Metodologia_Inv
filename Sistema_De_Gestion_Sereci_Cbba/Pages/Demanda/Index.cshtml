@@ -9,6 +9,20 @@
 
     <div class="mb-4">
         <h2>Análisis de demanda</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+        {
+            <div class="alert alert-success alert-dismissible fade show"
+                 role="alert">
+
+                @Model.Mensaje
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert">
+                </button>
+
+            </div>
+        }
         <p class="text-muted">
             Comportamiento de la demanda de usuarios por horarios y tipos de trámite.
         </p>
@@ -419,6 +433,40 @@
                 }
             });
 
+        </script>
+    }
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+
+                const modalElement =
+                    document.getElementById('modalDemanda');
+
+                if (modalElement) {
+                    const modal =
+                        new bootstrap.Modal(modalElement);
+
+                    modal.show();
+                }
+            });
+        </script>
+    }
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+
+                const modalElement =
+                    document.getElementById('modalDemanda');
+
+                if (modalElement) {
+                    const modal =
+                        new bootstrap.Modal(modalElement);
+
+                    modal.show();
+                }
+            });
         </script>
     }
 }

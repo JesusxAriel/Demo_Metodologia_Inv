@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Sistema_De_Gestion_Sereci_Cbba.Data;
 using Sistema_De_Gestion_Sereci_Cbba.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace Sistema_De_Gestion_Sereci_Cbba.Pages;
 
@@ -25,10 +26,27 @@ public class DemandaModel(ApplicationDbContext context) : PageModel
 
     // Formulario de nuevo registro
     [BindProperty]
-    public RegistroDemanda Formulario { get; set; } = new()
+    public DemandaInputModel Formulario { get; set; } = new()
     {
         Fecha = DateOnly.FromDateTime(DateTime.Today)
     };
+
+    public class DemandaInputModel
+    {
+        [Required(ErrorMessage = "La fecha es obligatoria.")]
+        public DateOnly? Fecha { get; set; }
+
+        [Required(ErrorMessage = "Seleccione un trámite.")]
+        public int? TramiteId { get; set; }
+
+        [Required(ErrorMessage = "Seleccione una franja horaria.")]
+        public string? FranjaHoraria { get; set; }
+
+        [Required(ErrorMessage = "Ingrese la cantidad de usuarios.")]
+        [Range(0, int.MaxValue,
+            ErrorMessage = "La cantidad de usuarios no puede ser negativa.")]
+        public int? CantidadUsuarios { get; set; }
+    }
 
     [TempData]
     public string? Mensaje { get; set; }
@@ -40,17 +58,20 @@ public class DemandaModel(ApplicationDbContext context) : PageModel
 
     public async Task<IActionResult> OnPostGuardarAsync()
     {
-        ValidarFormulario();
-
         if (!ModelState.IsValid)
         {
             await CargarDatosAsync();
             return Page();
         }
 
+        var tramiteId = Formulario.TramiteId!.Value;
+        var fecha = Formulario.Fecha!.Value;
+        var franja = Formulario.FranjaHoraria!.Trim();
+        var cantidadUsuarios = Formulario.CantidadUsuarios!.Value;
+
         var tramiteExiste = await context.Tramites
             .AnyAsync(t =>
-                t.Id == Formulario.TramiteId &&
+                t.Id == tramiteId &&
                 t.Estado == "Activo");
 
         if (!tramiteExiste)
@@ -65,9 +86,9 @@ public class DemandaModel(ApplicationDbContext context) : PageModel
 
         var registroDuplicado = await context.RegistrosDemanda
             .AnyAsync(r =>
-                r.Fecha == Formulario.Fecha &&
-                r.FranjaHoraria == Formulario.FranjaHoraria &&
-                r.TramiteId == Formulario.TramiteId);
+                r.Fecha == fecha &&
+                r.FranjaHoraria == franja &&
+                r.TramiteId == tramiteId);
 
         if (registroDuplicado)
         {
@@ -81,13 +102,14 @@ public class DemandaModel(ApplicationDbContext context) : PageModel
 
         var nuevoRegistro = new RegistroDemanda
         {
-            Fecha = Formulario.Fecha,
-            FranjaHoraria = Formulario.FranjaHoraria.Trim(),
-            TramiteId = Formulario.TramiteId,
-            CantidadUsuarios = Formulario.CantidadUsuarios
+            Fecha = fecha,
+            FranjaHoraria = franja,
+            TramiteId = tramiteId,
+            CantidadUsuarios = cantidadUsuarios
         };
 
         context.RegistrosDemanda.Add(nuevoRegistro);
+
         await context.SaveChangesAsync();
 
         Mensaje = "El registro de demanda se creó correctamente.";

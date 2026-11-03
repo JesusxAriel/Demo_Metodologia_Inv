@@ -9,7 +9,21 @@
 
     <div class="mb-4">
         <h2>Dashboard</h2>
-
+        @if (Model.FechaJornada.HasValue)
+        {
+            <p class="text-muted">
+                Resumen de la jornada:
+                <strong>
+                    @Model.FechaJornada.Value.ToString("dd/MM/yyyy")
+                </strong>
+            </p>
+        }
+        else
+        {
+            <p class="text-muted">
+                No existen registros de demanda disponibles.
+            </p>
+        }
         <p class="text-muted">
             Resumen general del comportamiento de la demanda
             y capacidad de atención.
@@ -84,15 +98,15 @@
                 <div class="card-body">
 
                     <span class="text-muted">
-                        Utilización promedio
+                        Turnos pendientes
                     </span>
 
                     <h3 class="mt-2">
-                        @Model.UtilizacionPromedio.ToString("0.0") %
+                        @Model.TurnosPendientes
                     </h3>
 
                     <small>
-                        capacidad utilizada
+                        usuarios en cola
                     </small>
 
                 </div>
@@ -164,7 +178,7 @@
                         </span>
 
                         <h4>
-                            @Model.PuntosAtencion.Count
+                            @Model.Ventanillas.Count
                         </h4>
                     </div>
 
@@ -198,7 +212,7 @@
 
         <div class="card-body">
 
-            @if (Model.PuntosAtencion.Count == 0)
+            @if (Model.Ventanillas.Count == 0)
             {
                 <div class="text-center text-muted py-4">
                     No existen puntos de atención registrados.
@@ -208,7 +222,7 @@
             {
                 <div class="row">
 
-                    @foreach (var punto in Model.PuntosAtencion)
+                    @foreach (var punto in Model.Ventanillas)
                     {
                         <div class="col-md-6 col-lg-3 mb-3">
 
@@ -235,25 +249,28 @@
                                         </span>
 
                                     </div>
-
                                     <div class="mb-2">
-                                        <small class="text-muted">
-                                            Utilización
-                                        </small>
-                                    </div>
+    <small class="text-muted">
+        Usuarios en cola
+    </small>
 
-                                    <div class="progress">
+    <div>
+        <strong>@punto.UsuariosEnCola</strong>
+    </div>
+</div>
 
-                                        <div class="progress-bar"
-                                             role="progressbar"
-                                             style="width:
-                                            @punto.CargaActualPorcentaje%">
+<div>
+    <small class="text-muted">
+        Espera proyectada
+    </small>
 
-                                            @punto.CargaActualPorcentaje %
-
-                                        </div>
-
-                                    </div>
+    <div>
+        <strong>
+            @punto.TiempoEsperaEstimadoMinutos min
+        </strong>
+    </div>
+</div>
+                                   
 
                                 </div>
 

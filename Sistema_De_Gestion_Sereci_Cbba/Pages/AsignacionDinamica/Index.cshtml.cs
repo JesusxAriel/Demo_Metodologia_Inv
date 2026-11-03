@@ -200,26 +200,10 @@ public class AsignacionDinamicaModel(
         }
 
         ventanilla.Estado = estado;
-        ReasignacionResultadoDto? reasignacion = null;
-        if (estado == "Inactiva")
-        {
-            await context.SaveChangesAsync();
-            reasignacion = await dynamicAssignmentServicio
-                .ReasignarTurnosPendientesAsync(
-                    puntoAtencionId,
-                    "Cierre de la ventanilla.");
-        }
 
         await context.SaveChangesAsync();
         await transaction.CommitAsync();
-        var detalleBloqueos = reasignacion is { Bloqueados.Count: > 0 }
-            ? $" Turnos sin destino compatible: {string.Join(", ", reasignacion.Bloqueados)}."
-            : string.Empty;
-        var detalleReasignados = reasignacion is not null
-            ? $" Reasignados: {reasignacion.Reasignados}."
-            : string.Empty;
-        Mensaje = $"La ventanilla ahora está {estado.ToLowerInvariant()}." +
-            detalleReasignados + detalleBloqueos;
+        Mensaje = $"La ventanilla ahora está {estado.ToLowerInvariant()}.";
 
         // Las solicitudes AJAX reciben los datos actualizados en JSON.
         if (EsSolicitudAjax())

@@ -1,10 +1,341 @@
 ﻿@page
-@model IndexModel
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.IndexModel
+
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid">
+
+    <div class="mb-4">
+        <h2>Dashboard</h2>
+
+        <p class="text-muted">
+            Resumen general del comportamiento de la demanda
+            y capacidad de atención.
+        </p>
+    </div>
+
+    <!-- KPI -->
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <span class="text-muted">
+                        Demanda registrada
+                    </span>
+
+                    <h3 class="mt-2">
+                        @Model.DemandaTotal
+                    </h3>
+
+                    <small>
+                        usuarios
+                    </small>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <span class="text-muted">
+                        Mayor demanda
+                    </span>
+
+                    <h3 class="mt-2">
+                        @Model.FranjaMayorDemanda
+                    </h3>
+
+                    <small>
+                        franja horaria
+                    </small>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <span class="text-muted">
+                        Puntos activos
+                    </span>
+
+                    <h3 class="mt-2">
+                        @Model.PuntosActivos
+                    </h3>
+
+                    <small>
+                        puntos de atención
+                    </small>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <span class="text-muted">
+                        Utilización promedio
+                    </span>
+
+                    <h3 class="mt-2">
+                        @Model.UtilizacionPromedio.ToString("0.0") %
+                    </h3>
+
+                    <small>
+                        capacidad utilizada
+                    </small>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <!-- GRÁFICO DEMANDA -->
+        <div class="col-lg-8 mb-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header">
+                    <strong>
+                        Demanda por franja horaria
+                    </strong>
+                </div>
+
+                <div class="card-body">
+
+                    @if (Model.FranjasGrafico.Count == 0)
+                    {
+                        <div class="text-center text-muted py-5">
+                            No existen registros de demanda.
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="height: 320px;">
+                            <canvas id="graficoDemanda"></canvas>
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ESTADO GENERAL -->
+        <div class="col-lg-4 mb-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header">
+                    <strong>
+                        Resumen del sistema
+                    </strong>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="mb-4">
+                        <span class="text-muted">
+                            Trámites activos
+                        </span>
+
+                        <h4>
+                            @Model.TramitesActivos
+                        </h4>
+                    </div>
+
+                    <div class="mb-4">
+                        <span class="text-muted">
+                            Total puntos de atención
+                        </span>
+
+                        <h4>
+                            @Model.PuntosAtencion.Count
+                        </h4>
+                    </div>
+
+                    <div>
+                        <span class="text-muted">
+                            Puntos activos
+                        </span>
+
+                        <h4>
+                            @Model.PuntosActivos
+                        </h4>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- PUNTOS DE ATENCIÓN -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>
+                Estado de los puntos de atención
+            </strong>
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.PuntosAtencion.Count == 0)
+            {
+                <div class="text-center text-muted py-4">
+                    No existen puntos de atención registrados.
+                </div>
+            }
+            else
+            {
+                <div class="row">
+
+                    @foreach (var punto in Model.PuntosAtencion)
+                    {
+                        <div class="col-md-6 col-lg-3 mb-3">
+
+                            <div class="card h-100">
+
+                                <div class="card-body">
+
+                                    <div class="d-flex
+                                        justify-content-between
+                                        align-items-center
+                                        mb-3">
+
+                                        <strong>
+                                            @punto.Nombre
+                                        </strong>
+
+                                        <span class="badge
+                                            @(punto.Estado == "Activa"
+    ? "bg-success"
+    : "bg-secondary")">
+
+                                            @punto.Estado
+
+                                        </span>
+
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            Utilización
+                                        </small>
+                                    </div>
+
+                                    <div class="progress">
+
+                                        <div class="progress-bar"
+                                             role="progressbar"
+                                             style="width:
+                                            @punto.CargaActualPorcentaje%">
+
+                                            @punto.CargaActualPorcentaje %
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    }
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
 </div>
+
+@section Scripts
+{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    @if (Model.FranjasGrafico.Count > 0)
+    {
+        <script>
+
+            const franjasDashboard = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                        Model.FranjasGrafico
+                        )
+                        );
+
+            const usuariosDashboard = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                        Model.UsuariosGrafico
+                        )
+                        );
+
+            const canvasDashboard =
+                document.getElementById('graficoDemanda');
+
+            new Chart(canvasDashboard, {
+
+                type: 'bar',
+
+                data: {
+
+                    labels: franjasDashboard,
+
+                    datasets: [{
+                        label: 'Usuarios',
+                        data: usuariosDashboard,
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+
+                options: {
+
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+
+                    scales: {
+
+                        y: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+
+                    }
+                }
+
+            });
+
+        </script>
+    }
+}

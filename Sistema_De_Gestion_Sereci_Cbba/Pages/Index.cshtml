@@ -4,15 +4,139 @@
 @{
     ViewData["Title"] = "Dashboard";
 }
+<style>
+    .dashboard-page {
+        max-width: 1500px;
+        margin: 0 auto;
+    }
 
-<div class="container-fluid">
+    .dashboard-header {
+        margin-bottom: 24px;
+    }
 
-    <div class="mb-4">
+        .dashboard-header h2 {
+            margin-bottom: 5px;
+            font-size: 26px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .dashboard-header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+    .dashboard-metric {
+        height: 100%;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+    }
+
+    .dashboard-metric-label {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .dashboard-metric-value {
+        margin-top: 8px;
+        color: #1e3a5f;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .dashboard-metric-description {
+        margin-top: 4px;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .dashboard-panel {
+        height: 100%;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+    }
+
+    .dashboard-panel-title {
+        margin-bottom: 18px;
+        color: #334155;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .window-card {
+        height: 100%;
+        padding: 18px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #ffffff;
+    }
+
+    .window-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .window-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .window-stat {
+        margin-bottom: 12px;
+    }
+
+        .window-stat span {
+            display: block;
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .window-stat strong {
+            color: #334155;
+            font-size: 15px;
+        }
+
+    .state-active {
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .state-inactive {
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+    }
+</style>
+<div class="dashboard-page">
+
+    <div class="dashboard-header">
+
         <h2>Dashboard</h2>
+
         @if (Model.FechaJornada.HasValue)
         {
-            <p class="text-muted">
-                Resumen de la jornada:
+            <p>
+                Resumen operativo de la jornada
                 <strong>
                     @Model.FechaJornada.Value.ToString("dd/MM/yyyy")
                 </strong>
@@ -20,178 +144,201 @@
         }
         else
         {
-            <p class="text-muted">
+            <p>
                 No existen registros de demanda disponibles.
             </p>
         }
-        <p class="text-muted">
-            Resumen general del comportamiento de la demanda
-            y capacidad de atención.
-        </p>
-    </div>
-
-    <!-- KPI -->
-    <div class="row mb-4">
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-
-                    <span class="text-muted">
-                        Demanda registrada
-                    </span>
-
-                    <h3 class="mt-2">
-                        @Model.DemandaTotal
-                    </h3>
-
-                    <small>
-                        usuarios
-                    </small>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-
-                    <span class="text-muted">
-                        Mayor demanda
-                    </span>
-
-                    <h3 class="mt-2">
-                        @Model.FranjaMayorDemanda
-                    </h3>
-
-                    <small>
-                        franja horaria
-                    </small>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-
-                    <span class="text-muted">
-                        Puntos activos
-                    </span>
-
-                    <h3 class="mt-2">
-                        @Model.PuntosActivos
-                    </h3>
-
-                    <small>
-                        puntos de atención
-                    </small>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-
-                    <span class="text-muted">
-                        Turnos pendientes
-                    </span>
-
-                    <h3 class="mt-2">
-                        @Model.TurnosPendientes
-                    </h3>
-
-                    <small>
-                        usuarios en cola
-                    </small>
-
-                </div>
-            </div>
-        </div>
 
     </div>
+    <div class="row g-3 mb-4">
 
-    <div class="row">
+        <!-- DEMANDA POR TRÁMITE -->
+        <div class="col-lg-6">
 
-        <!-- GRÁFICO DEMANDA -->
-        <div class="col-lg-8 mb-4">
+            <div class="dashboard-panel">
 
-            <div class="card shadow-sm h-100">
-
-                <div class="card-header">
-                    <strong>
-                        Demanda por franja horaria
-                    </strong>
+                <div class="dashboard-panel-title">
+                    Demanda por tipo de trámite
                 </div>
 
-                <div class="card-body">
-
-                    @if (Model.FranjasGrafico.Count == 0)
-                    {
-                        <div class="text-center text-muted py-5">
-                            No existen registros de demanda.
-                        </div>
-                    }
-                    else
-                    {
-                        <div style="height: 320px;">
-                            <canvas id="graficoDemanda"></canvas>
-                        </div>
-                    }
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- ESTADO GENERAL -->
-        <div class="col-lg-4 mb-4">
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-header">
-                    <strong>
-                        Resumen del sistema
-                    </strong>
-                </div>
-
-                <div class="card-body">
-
-                    <div class="mb-4">
-                        <span class="text-muted">
-                            Trámites activos
-                        </span>
-
-                        <h4>
-                            @Model.TramitesActivos
-                        </h4>
+                @if (Model.TramitesGrafico.Count == 0)
+                {
+                    <div class="text-center text-muted py-5">
+                        No existen datos de trámites
+                        para esta jornada.
                     </div>
-
-                    <div class="mb-4">
-                        <span class="text-muted">
-                            Total puntos de atención
-                        </span>
-
-                        <h4>
-                            @Model.Ventanillas.Count
-                        </h4>
+                }
+                else
+                {
+                    <div style="height: 300px;">
+                        <canvas id="graficoTramites"></canvas>
                     </div>
+                }
 
-                    <div>
-                        <span class="text-muted">
-                            Puntos activos
-                        </span>
+            </div>
 
-                        <h4>
-                            @Model.PuntosActivos
-                        </h4>
+        </div>
+
+
+        <!-- ESPERA POR VENTANILLA -->
+        <div class="col-lg-6">
+
+            <div class="dashboard-panel">
+
+                <div class="dashboard-panel-title">
+                    Espera proyectada por punto de atención
+                </div>
+
+                @if (Model.VentanillasGrafico.Count == 0)
+                {
+                    <div class="text-center text-muted py-5">
+                        No existen puntos de atención.
                     </div>
+                }
+                else
+                {
+                    <div style="height: 300px;">
+                        <canvas id="graficoEspera"></canvas>
+                    </div>
+                }
 
+            </div>
+
+        </div>
+
+    </div>
+    <!-- INDICADORES -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-metric">
+
+                <div class="dashboard-metric-label">
+                    Demanda de la jornada
+                </div>
+
+                <div class="dashboard-metric-value">
+                    @Model.DemandaTotal
+                </div>
+
+                <div class="dashboard-metric-description">
+                    usuarios registrados
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-metric">
+
+                <div class="dashboard-metric-label">
+                    Franja de mayor demanda
+                </div>
+
+                <div class="dashboard-metric-value"
+                     style="font-size: 21px;">
+                    @Model.FranjaMayorDemanda
+                </div>
+
+                <div class="dashboard-metric-description">
+                    mayor concentración
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-metric">
+
+                <div class="dashboard-metric-label">
+                    Puntos activos
+                </div>
+
+                <div class="dashboard-metric-value">
+                    @Model.PuntosActivos
+                </div>
+
+                <div class="dashboard-metric-description">
+                    ventanillas disponibles
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-metric">
+
+                <div class="dashboard-metric-label">
+                    Turnos pendientes
+                </div>
+
+                <div class="dashboard-metric-value">
+                    @Model.TurnosPendientes
+                </div>
+
+                <div class="dashboard-metric-description">
+                    usuarios actualmente en cola
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- GRÁFICO + RESUMEN -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-lg-8">
+
+            <div class="dashboard-panel">
+
+                <div class="dashboard-panel-title">
+                    Demanda por franja horaria
+                </div>
+
+                @if (Model.FranjasGrafico.Count == 0)
+                {
+                    <div class="text-center text-muted py-5">
+                        No existen datos de demanda.
+                    </div>
+                }
+                else
+                {
+                    <div style="height: 300px;">
+                        <canvas id="graficoDemanda"></canvas>
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+        <div class="col-lg-4">
+
+            <div class="dashboard-panel">
+
+                <div class="dashboard-panel-title">
+                    Resumen operativo
+                </div>
+
+                <div class="window-stat">
+                    <span>Trámites activos</span>
+                    <strong>@Model.TramitesActivos</strong>
+                </div>
+
+                <div class="window-stat">
+                    <span>Puntos registrados</span>
+                    <strong>@Model.Ventanillas.Count</strong>
+                </div>
+
+                <div class="window-stat">
+                    <span>Puntos actualmente activos</span>
+                    <strong>@Model.PuntosActivos</strong>
+                </div>
+
+                <div class="window-stat">
+                    <span>Usuarios pendientes</span>
+                    <strong>@Model.TurnosPendientes</strong>
                 </div>
 
             </div>
@@ -200,93 +347,82 @@
 
     </div>
 
-    <!-- PUNTOS DE ATENCIÓN -->
+    <!-- ESTADO DE VENTANILLAS -->
+    <div class="dashboard-panel">
 
-    <div class="card shadow-sm mb-4">
-
-        <div class="card-header">
-            <strong>
-                Estado de los puntos de atención
-            </strong>
+        <div class="dashboard-panel-title">
+            Estado actual de los puntos de atención
         </div>
 
-        <div class="card-body">
+        @if (Model.Ventanillas.Count == 0)
+        {
+            <div class="text-center text-muted py-4">
+                No existen puntos de atención registrados.
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
 
-            @if (Model.Ventanillas.Count == 0)
-            {
-                <div class="text-center text-muted py-4">
-                    No existen puntos de atención registrados.
-                </div>
-            }
-            else
-            {
-                <div class="row">
+                @foreach (var punto in Model.Ventanillas)
+                {
+                    <div class="col-xl-3 col-md-6">
 
-                    @foreach (var punto in Model.Ventanillas)
-                    {
-                        <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="window-card">
 
-                            <div class="card h-100">
+                            <div class="window-header">
 
-                                <div class="card-body">
+                                <span class="window-name">
+                                    @punto.Nombre
+                                </span>
 
-                                    <div class="d-flex
-                                        justify-content-between
-                                        align-items-center
-                                        mb-3">
+                                <span class="@(punto.Estado == "Activa"
+                                            ? "state-active"
+                                            : "state-inactive")">
 
-                                        <strong>
-                                            @punto.Nombre
-                                        </strong>
+                                    @punto.Estado
 
-                                        <span class="badge
-                                            @(punto.Estado == "Activa"
-    ? "bg-success"
-    : "bg-secondary")">
+                                </span>
 
-                                            @punto.Estado
+                            </div>
 
-                                        </span>
+                            <div class="window-stat">
 
-                                    </div>
-                                    <div class="mb-2">
-    <small class="text-muted">
-        Usuarios en cola
-    </small>
+                                <span>
+                                    Usuarios en cola
+                                </span>
 
-    <div>
-        <strong>@punto.UsuariosEnCola</strong>
-    </div>
-</div>
+                                <strong>
+                                    @punto.UsuariosEnCola
+                                </strong>
 
-<div>
-    <small class="text-muted">
-        Espera proyectada
-    </small>
+                            </div>
 
-    <div>
-        <strong>
-            @punto.TiempoEsperaEstimadoMinutos min
-        </strong>
-    </div>
-</div>
-                                   
+                            <div class="window-stat">
 
-                                </div>
+                                <span>
+                                    Espera proyectada
+                                </span>
+
+                                <strong>
+                                    @punto.TiempoEsperaEstimadoMinutos min
+                                </strong>
 
                             </div>
 
                         </div>
-                    }
 
-                </div>
-            }
+                    </div>
+                }
 
-        </div>
+            </div>
+        }
 
     </div>
 
 </div>
+
+
 
 @section Scripts
 {
@@ -352,6 +488,140 @@
                 }
 
             });
+
+        </script>
+    }
+    @if (Model.TramitesGrafico.Count > 0)
+    {
+        <script>
+
+            const tramitesDashboard = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                        Model.TramitesGrafico
+                        )
+                        );
+
+            const demandaTramitesDashboard = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                        Model.DemandaTramitesGrafico
+                        )
+                        );
+
+            new Chart(
+                document.getElementById('graficoTramites'),
+                {
+                    type: 'bar',
+
+                    data: {
+                        labels: tramitesDashboard,
+
+                        datasets: [{
+                            label: 'Usuarios',
+                            data: demandaTramitesDashboard,
+                            borderWidth: 1,
+                            borderRadius: 5
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        indexAxis: 'y',
+
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+
+                                ticks: {
+                                    precision: 0
+                                },
+
+                                title: {
+                                    display: true,
+                                    text: 'Usuarios'
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+        </script>
+    }
+    @if (Model.VentanillasGrafico.Count > 0)
+    {
+        <script>
+
+            const ventanillasDashboard = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                        Model.VentanillasGrafico
+                        )
+                        );
+
+            const esperaDashboard = @Html.Raw(
+                        System.Text.Json.JsonSerializer.Serialize(
+                        Model.EsperaVentanillasGrafico
+                        )
+                        );
+
+            new Chart(
+                document.getElementById('graficoEspera'),
+                {
+                    type: 'bar',
+
+                    data: {
+                        labels: ventanillasDashboard,
+
+                        datasets: [{
+                            label: 'Espera proyectada',
+                            data: esperaDashboard,
+                            borderWidth: 1,
+                            borderRadius: 5
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.raw + ' min';
+                                    }
+                                }
+                            }
+                        },
+
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+
+                                ticks: {
+                                    precision: 0
+                                },
+
+                                title: {
+                                    display: true,
+                                    text: 'Minutos'
+                                }
+                            }
+                        }
+                    }
+                }
+            );
 
         </script>
     }

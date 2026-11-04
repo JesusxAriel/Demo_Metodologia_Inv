@@ -28,6 +28,12 @@ public class IndexModel(
 
     public IReadOnlyList<EstadoVentanillaDto> Ventanillas { get; private set; } = [];
 
+    public List<string> TramitesGrafico { get; private set; } = [];
+    public List<int> DemandaTramitesGrafico { get; private set; } = [];
+
+    public List<string> VentanillasGrafico { get; private set; } = [];
+    public List<int> EsperaVentanillasGrafico { get; private set; } = [];
+
     public async Task OnGetAsync()
     {
         await CargarDemandaAsync();
@@ -49,9 +55,10 @@ public class IndexModel(
         }
 
         var registros = await context.RegistrosDemanda
-            .AsNoTracking()
-            .Where(r => r.Fecha == FechaJornada.Value)
-            .ToListAsync();
+    .AsNoTracking()
+    .Include(r => r.Tramite)
+    .Where(r => r.Fecha == FechaJornada.Value)
+    .ToListAsync();
 
         if (registros.Count == 0)
         {
@@ -85,6 +92,23 @@ public class IndexModel(
             .First();
 
         FranjaMayorDemanda = mayor.Franja;
+        var demandaPorTramite = registros
+    .GroupBy(r => r.Tramite.Nombre)
+    .Select(grupo => new
+    {
+        Tramite = grupo.Key,
+        Total = grupo.Sum(r => r.CantidadUsuarios)
+    })
+    .OrderByDescending(x => x.Total)
+    .ToList();
+
+        TramitesGrafico = demandaPorTramite
+            .Select(x => x.Tramite)
+            .ToList();
+
+        DemandaTramitesGrafico = demandaPorTramite
+            .Select(x => x.Total)
+            .ToList();
     }
 
     private async Task CargarVentanillasAsync()
@@ -97,6 +121,13 @@ public class IndexModel(
 
         TurnosPendientes = Ventanillas.Sum(v =>
             v.UsuariosEnCola);
+        VentanillasGrafico = Ventanillas
+    .Select(v => v.Nombre)
+    .ToList();
+
+        EsperaVentanillasGrafico = Ventanillas
+            .Select(v => v.TiempoEsperaEstimadoMinutos)
+            .ToList();
     }
 
     private async Task CargarTramitesAsync()

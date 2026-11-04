@@ -5,166 +5,302 @@
     ViewData["Title"] = "Demanda";
 }
 
-<div class="container-fluid">
+<style>
+    .demand-page {
+        max-width: 1500px;
+        margin: 0 auto;
+    }
 
-    <div class="mb-4">
+    .demand-header {
+        margin-bottom: 24px;
+    }
+
+        .demand-header h2 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #1f2937;
+        }
+
+        .demand-header p {
+            color: #64748b;
+            margin: 0;
+            font-size: 14px;
+        }
+
+    .demand-filter-card,
+    .demand-card,
+    .demand-table-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .demand-filter-card {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .metric-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .metric-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .metric-value {
+        margin-top: 8px;
+        font-size: 27px;
+        font-weight: 700;
+        color: #1e3a5f;
+    }
+
+    .metric-note {
+        margin-top: 4px;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .demand-card {
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 18px;
+    }
+
+    .table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+        .table-header h5 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+    .demand-table-card {
+        overflow: hidden;
+    }
+
+        .demand-table-card .table {
+            margin-bottom: 0;
+        }
+
+        .demand-table-card th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .demand-table-card td {
+            vertical-align: middle;
+            font-size: 13px;
+        }
+</style>
+
+<div class="demand-page">
+
+    <div class="demand-header">
         <h2>Análisis de demanda</h2>
-        @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
-        {
-            <div class="alert alert-success alert-dismissible fade show"
-                 role="alert">
+        <p>
+            Comportamiento de usuarios por fecha,
+            franja horaria y tipo de trámite.
+        </p>
+    </div>
 
-                @Model.Mensaje
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @Model.Mensaje
 
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert">
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+        </div>
+    }
+
+    <!-- FILTROS -->
+    <form method="get"
+          class="demand-filter-card">
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Fecha
+                </label>
+
+                <input asp-for="FechaFiltro"
+                       type="date"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Tipo de trámite
+                </label>
+
+                <select asp-for="TramiteFiltroId"
+                        class="form-select">
+
+                    <option value="">
+                        Todos los trámites
+                    </option>
+
+                    @foreach (var tramite in Model.Tramites)
+                    {
+                        <option value="@tramite.Id">
+                            @tramite.Nombre
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-4 d-flex gap-2">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Aplicar filtros
                 </button>
 
+                <a asp-page="/Demanda/Index"
+                   class="btn btn-outline-secondary">
+                    Limpiar
+                </a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+    <!-- INDICADORES -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="metric-card">
+
+                <div class="metric-label">
+                    Demanda total
+                </div>
+
+                <div class="metric-value">
+                    @Model.DemandaTotal
+                </div>
+
+                <div class="metric-note">
+                    usuarios registrados
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="metric-card">
+
+                <div class="metric-label">
+                    Promedio
+                </div>
+
+                <div class="metric-value">
+                    @Model.PromedioDemanda.ToString("0.0")
+                </div>
+
+                <div class="metric-note">
+                    usuarios por registro
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="metric-card">
+
+                <div class="metric-label">
+                    Mayor demanda
+                </div>
+
+                <div class="metric-value"
+                     style="font-size: 22px;">
+                    @Model.FranjaMayorDemanda
+                </div>
+
+                <div class="metric-note">
+                    franja de mayor afluencia
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- GRÁFICO -->
+    <div class="demand-card">
+
+        <div class="section-title">
+            Demanda por franja horaria
+        </div>
+
+        @if (Model.Registros.Count == 0)
+        {
+            <div class="text-center text-muted py-5">
+                No existen datos para generar el gráfico.
             </div>
         }
-        <p class="text-muted">
-            Comportamiento de la demanda de usuarios por horarios y tipos de trámite.
-        </p>
-        <form method="get" class="card shadow-sm mb-4">
-            <div class="card-body">
-
-                <div class="row align-items-end">
-
-                    <div class="col-md-4">
-                        <label class="form-label">
-                            Fecha
-                        </label>
-
-                        <input asp-for="FechaFiltro"
-                               type="date"
-                               class="form-control" />
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">
-                            Tipo de trámite
-                        </label>
-
-                        <select asp-for="TramiteFiltroId"
-                                class="form-select">
-
-                            <option value="">
-                                Todos los trámites
-                            </option>
-
-                            @foreach (var tramite in Model.Tramites)
-                            {
-                                <option value="@tramite.Id">
-                                    @tramite.Nombre
-                                </option>
-                            }
-
-                        </select>
-                    </div>
-
-                    <div class="col-md-4">
-
-                        <button type="submit"
-                                class="btn btn-primary">
-                            Aplicar filtros
-                        </button>
-
-                        <a asp-page="/Demanda/Index"
-                           class="btn btn-outline-secondary">
-                            Limpiar
-                        </a>
-
-                    </div>
-
-                </div>
-
+        else
+        {
+            <div style="height: 300px;">
+                <canvas id="graficoDemanda"></canvas>
             </div>
-        </form>
+        }
+
     </div>
 
-    <div class="row mb-4">
+    <!-- TABLA -->
+    <div class="demand-table-card">
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <span class="text-muted">Demanda total</span>
-                    <h3>@Model.DemandaTotal</h3>
-                    <small>usuarios registrados</small>
-                </div>
-            </div>
-        </div>
+        <div class="table-header">
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <span class="text-muted">Promedio</span>
-                    <h3>@Model.PromedioDemanda.ToString("0.0")</h3>
-                    <small>usuarios por registro</small>
-                </div>
-            </div>
-        </div>
+            <h5>Registros de demanda</h5>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <span class="text-muted">Mayor demanda</span>
-                    <h3>@Model.FranjaMayorDemanda</h3>
-                    <small>franja de mayor afluencia</small>
-                </div>
-            </div>
-        </div>
+            <button type="button"
+                    class="btn btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalDemanda">
 
-    </div>
-    <div class="d-flex justify-content-between align-items-center mb-3">
+                + Registrar demanda
 
-        <h4 class="mb-0">
-            Registros de demanda
-        </h4>
-
-        <button type="button"
-                class="btn btn-primary"
-                data-bs-toggle="modal"
-                data-bs-target="#modalDemanda">
-
-            + Registrar demanda
-
-        </button>
-
-    </div>
-    <div class="card shadow-sm mb-4">
-
-        <div class="card-header">
-            <strong>Demanda por franja horaria</strong>
-        </div>
-
-        <div class="card-body">
-
-            @if (Model.Registros.Count == 0)
-            {
-                <div class="text-center text-muted py-4">
-                    No existen datos para generar el gráfico.
-                </div>
-            }
-            else
-            {
-                <div style="height: 320px;">
-                    <canvas id="graficoDemanda"></canvas>
-                </div>
-            }
+            </button>
 
         </div>
 
-    </div>
-    <div class="card shadow-sm">
-
-        <div class="card-header">
-            <strong>Registros de demanda</strong>
-        </div>
-
-        <div class="card-body">
+        <div class="table-responsive">
 
             <table class="table table-hover">
+
                 <thead>
                     <tr>
                         <th>Fecha</th>
@@ -175,39 +311,56 @@
                 </thead>
 
                 <tbody>
+
                     @if (Model.Registros.Count == 0)
                     {
-                     <tr>
-                     <td colspan="4"
-                     class="text-center text-muted py-4">
+                        <tr>
+                            <td colspan="4"
+                                class="text-center text-muted py-4">
 
-                       No existen registros de demanda
-                       para los filtros seleccionados.
+                                No existen registros para
+                                los filtros seleccionados.
 
-                    </td>
-                    </tr>
+                            </td>
+                        </tr>
                     }
                     else
                     {
-                    @foreach (var registro in Model.Registros)
-                    {
-                        <tr>
-                            <td>@registro.Fecha.ToString("dd/MM/yyyy")</td>
+                        @foreach (var registro in Model.Registros)
+                        {
+                            <tr>
 
-                            <td>@registro.FranjaHoraria</td>
+                                <td>
+                                    @registro.Fecha.ToString("dd/MM/yyyy")
+                                </td>
 
-                            <td>@registro.Tramite?.Nombre </td>
+                                <td>
+                                    @registro.FranjaHoraria
+                                </td>
 
-                            <td>@registro.CantidadUsuarios </td>
-                        </tr>
+                                <td>
+                                    @registro.Tramite.Nombre
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        @registro.CantidadUsuarios
+                                    </strong>
+                                </td>
+
+                            </tr>
+                        }
                     }
-                    }
+
                 </tbody>
+
             </table>
 
         </div>
 
     </div>
+
+</div>
 
     <div class="modal fade"
          id="modalDemanda"
@@ -363,6 +516,7 @@
 
     </div>
 </div>
+
 @section Scripts {
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

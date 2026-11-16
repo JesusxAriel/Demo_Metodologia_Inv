@@ -1,4 +1,278 @@
 ﻿@page
-@model Sistema_De_Gestion_Sereci_Cbba.Pages.Simulacion.IndexModel
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.SimulacionModel
 @{
+    ViewData["Title"] = "Simulación";
+    var metodo = Model.Formulario.MetodoAsignacion;
+}
+
+<section class="simulation-page">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">MÓDULO DE ANÁLISIS</span>
+            <h1>Simulación de atención</h1>
+            <p>Define las variables para evaluar el comportamiento del sistema.</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <div class="feedback-message feedback-success" role="status">@Model.Mensaje</div>
+    }
+    <div asp-validation-summary="ModelOnly" class="validation-message"></div>
+
+    <form method="post" asp-page-handler="Ejecutar" id="simulation-form" novalidate>
+        <div class="simulation-grid">
+            <section class="panel step-panel">
+                <div class="step-heading">
+                    <span class="step-number">01</span>
+                    <div>
+                        <span class="eyebrow">PRIMER PASO</span>
+                        <h2>Configuración del escenario</h2>
+                        <span class="step-description">Variables de entrada para el modelo de simulación.</span>
+                    </div>
+                </div>
+
+                <div class="simulation-fields">
+                    <div class="simulation-field">
+                        <label asp-for="Formulario.Nombre" class="field-label">Nombre del escenario</label>
+                        <input asp-for="Formulario.Nombre" class="field-control" maxlength="100"
+                               autocomplete="off" />
+                        <span asp-validation-for="Formulario.Nombre" class="validation-message"></span>
+                    </div>
+
+                    <div class="simulation-field">
+                        <label asp-for="Formulario.CantidadUsuarios" class="field-label">Cantidad estimada de usuarios</label>
+                        <input asp-for="Formulario.CantidadUsuarios" class="field-control" min="1" step="1"
+                               inputmode="numeric" />
+                        <span asp-validation-for="Formulario.CantidadUsuarios" class="validation-message"></span>
+                    </div>
+
+                    <div class="simulation-field">
+                        <label asp-for="Formulario.PuntosActivos" class="field-label">Cantidad de puntos de atención</label>
+                        <input asp-for="Formulario.PuntosActivos" class="field-control" min="1" step="1"
+                               inputmode="numeric" />
+                        <span class="form-help">Actualmente hay @Model.PuntosActivosActuales puntos activos en operación.</span>
+                        <span asp-validation-for="Formulario.PuntosActivos" class="validation-message"></span>
+                    </div>
+
+                    <div class="simulation-field">
+                        <label asp-for="Formulario.HoraInicio" class="field-label">Hora inicial</label>
+                        <input asp-for="Formulario.HoraInicio" class="field-control" type="time" step="60"
+                               value="@Model.Formulario.HoraInicio.ToString("HH:mm")" />
+                        <span asp-validation-for="Formulario.HoraInicio" class="validation-message"></span>
+                    </div>
+
+                    <div class="simulation-field">
+                        <label asp-for="Formulario.HoraFin" class="field-label">Hora final</label>
+                        <input asp-for="Formulario.HoraFin" class="field-control" type="time" step="60"
+                               value="@Model.Formulario.HoraFin.ToString("HH:mm")" />
+                        <span asp-validation-for="Formulario.HoraFin" class="validation-message"
+                              id="time-range-message"></span>
+                    </div>
+
+                    <div class="simulation-field">
+                        <label asp-for="Formulario.MetodoAsignacion" class="field-label">Método de asignación</label>
+                        <select asp-for="Formulario.MetodoAsignacion" class="field-control">
+                            <option value="Convencional">Distribución convencional</option>
+                            <option value="Dinamica">Asignación dinámica</option>
+                        </select>
+                        <span asp-validation-for="Formulario.MetodoAsignacion" class="validation-message"></span>
+                    </div>
+                </div>
+
+                <div class="method-options" role="radiogroup" aria-label="Método de asignación">
+                    <label class="method-card">
+                        <input type="radio" name="method-card" value="Convencional"
+                               checked="@(metodo == "Convencional")" />
+                        <span class="method-radio" aria-hidden="true"></span>
+                        <span class="method-text">
+                            <strong>Distribución convencional</strong>
+                            <small>Asignación secuencial por orden de llegada.</small>
+                        </span>
+                    </label>
+                    <label class="method-card">
+                        <input type="radio" name="method-card" value="Dinamica"
+                               checked="@(metodo == "Dinamica")" />
+                        <span class="method-radio" aria-hidden="true"></span>
+                        <span class="method-text">
+                            <strong>Asignación dinámica</strong>
+                            <small>Optimización según carga y capacidad.</small>
+                        </span>
+                        <span class="method-tag"><span class="chip-dot"></span>Propuesta</span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="panel step-panel">
+                <div class="step-heading">
+                    <span class="step-number">02</span>
+                    <div>
+                        <span class="eyebrow">SEGUNDO PASO</span>
+                        <h2>Resumen de configuración</h2>
+                        <span class="step-description">Revise las variables antes de ejecutar.</span>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <span class="scenario-card-icon" aria-hidden="true">▷</span>
+                    <div>
+                        <span class="scenario-card-label">ESCENARIO</span>
+                        <strong id="summary-name"></strong>
+                    </div>
+                </div>
+
+                <dl class="summary-list">
+                    <div class="summary-row">
+                        <dt>Usuarios estimados</dt>
+                        <dd id="summary-users"></dd>
+                    </div>
+                    <div class="summary-row">
+                        <dt>Puntos de atención</dt>
+                        <dd id="summary-points"></dd>
+                    </div>
+                    <div class="summary-row">
+                        <dt>Periodo simulado</dt>
+                        <dd id="summary-period"></dd>
+                    </div>
+                    <div class="summary-row">
+                        <dt>Duración</dt>
+                        <dd id="summary-duration"></dd>
+                    </div>
+                    <div class="summary-row">
+                        <dt>Método</dt>
+                        <dd><span class="state-badge state-active" id="summary-method"></span></dd>
+                    </div>
+                </dl>
+
+                <div class="demo-note" role="note">
+                    <span class="demo-note-icon" aria-hidden="true">i</span>
+                    <p>La ejecución utiliza datos de demostración y no representa resultados reales del SERECI.</p>
+                </div>
+
+                <button type="submit" class="primary-button" id="run-button">
+                    <span id="run-icon" aria-hidden="true">▷</span>
+                    <span id="run-label">Ejecutar simulación</span>
+                    <span id="run-spinner" class="spinner d-none" aria-hidden="true"></span>
+                </button>
+            </section>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("simulation-form");
+            const field = (name) => document.getElementById(`Formulario_${name}`);
+            const nameInput = field("Nombre");
+            const usersInput = field("CantidadUsuarios");
+            const pointsInput = field("PuntosActivos");
+            const startInput = field("HoraInicio");
+            const endInput = field("HoraFin");
+            const methodSelect = field("MetodoAsignacion");
+            const methodCards = document.querySelectorAll('input[name="method-card"]');
+            const timeMessage = document.getElementById("time-range-message");
+            const button = document.getElementById("run-button");
+            const icon = document.getElementById("run-icon");
+            const label = document.getElementById("run-label");
+            const spinner = document.getElementById("run-spinner");
+
+            const methodNames = {
+                Convencional: "Distribución convencional",
+                Dinamica: "Asignación dinámica"
+            };
+
+            const toMinutes = (value) => {
+                const [hours, minutes] = (value || "").split(":").map(Number);
+                return Number.isNaN(hours) || Number.isNaN(minutes) ? null : hours * 60 + minutes;
+            };
+
+            const formatDuration = (total) => {
+                const hours = Math.floor(total / 60);
+                const minutes = total % 60;
+                if (!hours) return `${minutes} min`;
+                const hourText = `${hours} ${hours === 1 ? "hora" : "horas"}`;
+                return minutes ? `${hours} h ${minutes} min` : hourText;
+            };
+
+            const setText = (id, text) => {
+                document.getElementById(id).textContent = text;
+            };
+
+            const rangeIsValid = () => {
+                const start = toMinutes(startInput.value);
+                const end = toMinutes(endInput.value);
+                return start !== null && end !== null && end > start;
+            };
+
+            const updateSummary = () => {
+                const users = Number.parseInt(usersInput.value, 10);
+                const points = Number.parseInt(pointsInput.value, 10);
+                const start = toMinutes(startInput.value);
+                const end = toMinutes(endInput.value);
+                const validRange = rangeIsValid();
+
+                setText("summary-name", nameInput.value.trim() || "Sin nombre");
+                setText("summary-users", Number.isNaN(users) ? "--" : users.toLocaleString("es-BO"));
+                setText("summary-points", Number.isNaN(points) ? "--" :
+                    `${points} ${points === 1 ? "activo" : "activos"}`);
+                setText("summary-period", start !== null && end !== null ?
+                    `${startInput.value}–${endInput.value}` : "--");
+                setText("summary-duration", validRange ? formatDuration(end - start) : "--");
+                setText("summary-method", methodNames[methodSelect.value] ?? "--");
+
+                methodCards.forEach((card) => {
+                    card.checked = card.value === methodSelect.value;
+                });
+
+                const invalidRange = start !== null && end !== null && !validRange;
+                endInput.classList.toggle("input-invalid", invalidRange);
+                if (invalidRange) {
+                    timeMessage.textContent = "La hora final debe ser posterior a la hora inicial.";
+                } else if (!timeMessage.dataset.server) {
+                    timeMessage.textContent = "";
+                }
+            };
+
+            // Conserva el mensaje del servidor hasta que la persona modifique el horario.
+            if (timeMessage.textContent.trim()) {
+                timeMessage.dataset.server = "true";
+            }
+            [startInput, endInput].forEach((input) =>
+                input.addEventListener("input", () => delete timeMessage.dataset.server));
+
+            [nameInput, usersInput, pointsInput, startInput, endInput].forEach((input) =>
+                input.addEventListener("input", updateSummary));
+            methodSelect.addEventListener("change", updateSummary);
+            methodCards.forEach((card) =>
+                card.addEventListener("change", () => {
+                    if (card.checked) {
+                        methodSelect.value = card.value;
+                        updateSummary();
+                    }
+                }));
+
+            form.addEventListener("submit", (event) => {
+                if (!rangeIsValid()) {
+                    event.preventDefault();
+                    updateSummary();
+                    endInput.focus();
+                    return;
+                }
+
+                // Si la validación del lado del cliente falla, no se muestra el estado de carga.
+                if (window.jQuery && !window.jQuery(form).valid()) {
+                    return;
+                }
+
+                button.disabled = true;
+                icon.classList.add("d-none");
+                label.textContent = "Ejecutando simulación";
+                spinner.classList.remove("d-none");
+            });
+
+            updateSummary();
+        })();
+    </script>
 }

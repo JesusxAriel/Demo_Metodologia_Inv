@@ -27,10 +27,8 @@
                 <a class="sidebar-link @(currentPage == "/Index" ? "active" : "")" asp-page="/Index">
                     <span class="nav-icon">⌂</span><span>Dashboard</span>
                 </a>
-                <a class="sidebar-link @(currentPage == "/Demanda/Index" ? "active" : "")"
-                   asp-page="/Demanda/Index">
-                    <span class="nav-icon">▥</span>
-                    <span>Demanda</span>
+                <a class="sidebar-link" href="#">
+                    <span class="nav-icon">▥</span><span>Demanda</span>
                 </a>
                 <a class="sidebar-link @(currentPage == "/Tramites/Index" ? "active" : "")" asp-page="/Tramites/Index">
                     <span class="nav-icon">▤</span><span>Trámites</span>
@@ -41,7 +39,7 @@
                 <a class="sidebar-link @(currentPage == "/AsignacionDinamica/Index" ? "active" : "")" asp-page="/AsignacionDinamica/Index">
                     <span class="nav-icon">⇄</span><span>Asignación dinámica</span>
                 </a>
-                <a class="sidebar-link" href="#">
+                <a class="sidebar-link @(currentPage == "/Simulacion/Index" ? "active" : "")" asp-page="/Simulacion/Index">
                     <span class="nav-icon">◫</span><span>Simulación</span>
                 </a>
                 <a class="sidebar-link" href="#">

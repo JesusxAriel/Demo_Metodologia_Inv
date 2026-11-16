@@ -2,7 +2,9 @@
 @model Sistema_De_Gestion_Sereci_Cbba.Pages.SimulacionModel
 @{
     ViewData["Title"] = "Simulación";
-    var metodo = Model.Formulario.MetodoAsignacion;
+    var f = Model.Formulario;
+    var esDinamica = f.MetodoAsignacion != SimulacionModel.MetodoConvencional;
+    var maxPuntos = Model.PuntosRegistrados > 0 ? Model.PuntosRegistrados : 99;
 }
 
 <section class="simulation-page">
@@ -21,78 +23,79 @@
     <div asp-validation-summary="ModelOnly" class="validation-message"></div>
 
     <form method="post" asp-page-handler="Ejecutar" id="simulation-form" novalidate>
+        @Html.AntiForgeryToken()
         <div class="simulation-grid">
-            <section class="panel step-panel">
-                <div class="step-heading">
-                    <span class="step-number">01</span>
+            <section class="panel simulation-config">
+                <div class="panel-header">
                     <div>
-                        <span class="eyebrow">PRIMER PASO</span>
                         <h2>Configuración del escenario</h2>
-                        <span class="step-description">Variables de entrada para el modelo de simulación.</span>
+                        <p>Variables de entrada para el modelo de simulación.</p>
                     </div>
+                    <span class="panel-badge">01</span>
                 </div>
 
                 <div class="simulation-fields">
                     <div class="simulation-field">
-                        <label asp-for="Formulario.Nombre" class="field-label">Nombre del escenario</label>
-                        <input asp-for="Formulario.Nombre" class="field-control" maxlength="100"
-                               autocomplete="off" />
+                        <label class="field-label" for="sim-nombre">Nombre del escenario</label>
+                        <input class="field-control" id="sim-nombre" name="Formulario.Nombre"
+                               type="text" maxlength="100" value="@f.Nombre" />
                         <span asp-validation-for="Formulario.Nombre" class="validation-message"></span>
                     </div>
 
                     <div class="simulation-field">
-                        <label asp-for="Formulario.CantidadUsuarios" class="field-label">Cantidad estimada de usuarios</label>
-                        <input asp-for="Formulario.CantidadUsuarios" class="field-control" min="1" step="1"
-                               inputmode="numeric" />
+                        <label class="field-label" for="sim-usuarios">Cantidad estimada de usuarios</label>
+                        <input class="field-control" id="sim-usuarios" name="Formulario.CantidadUsuarios"
+                               type="number" min="1" step="1" value="@f.CantidadUsuarios" />
                         <span asp-validation-for="Formulario.CantidadUsuarios" class="validation-message"></span>
                     </div>
 
                     <div class="simulation-field">
-                        <label asp-for="Formulario.PuntosActivos" class="field-label">Cantidad de puntos de atención</label>
-                        <input asp-for="Formulario.PuntosActivos" class="field-control" min="1" step="1"
-                               inputmode="numeric" />
-                        <span class="form-help">Actualmente hay @Model.PuntosActivosActuales puntos activos en operación.</span>
+                        <label class="field-label" for="sim-puntos">Cantidad de puntos de atención</label>
+                        <input class="field-control" id="sim-puntos" name="Formulario.PuntosActivos"
+                               type="number" min="1" max="@maxPuntos" step="1" value="@f.PuntosActivos" />
+                        @if (Model.PuntosRegistrados > 0)
+                        {
+                            <span class="form-help">Hay @Model.PuntosRegistrados ventanillas registradas.</span>
+                        }
                         <span asp-validation-for="Formulario.PuntosActivos" class="validation-message"></span>
                     </div>
 
                     <div class="simulation-field">
-                        <label asp-for="Formulario.HoraInicio" class="field-label">Hora inicial</label>
-                        <input asp-for="Formulario.HoraInicio" class="field-control" type="time" step="60"
-                               value="@Model.Formulario.HoraInicio.ToString("HH:mm")" />
-                        <span asp-validation-for="Formulario.HoraInicio" class="validation-message"></span>
+                        <label class="field-label" for="sim-inicio">Hora inicial</label>
+                        <input class="field-control" id="sim-inicio" name="Formulario.HoraInicio"
+                               type="time" value="@f.HoraInicio.ToString("HH:mm")" />
                     </div>
 
                     <div class="simulation-field">
-                        <label asp-for="Formulario.HoraFin" class="field-label">Hora final</label>
-                        <input asp-for="Formulario.HoraFin" class="field-control" type="time" step="60"
-                               value="@Model.Formulario.HoraFin.ToString("HH:mm")" />
-                        <span asp-validation-for="Formulario.HoraFin" class="validation-message"
-                              id="time-range-message"></span>
+                        <label class="field-label" for="sim-fin">Hora final</label>
+                        <input class="field-control" id="sim-fin" name="Formulario.HoraFin"
+                               type="time" value="@f.HoraFin.ToString("HH:mm")" />
+                        <span asp-validation-for="Formulario.HoraFin" class="validation-message"></span>
                     </div>
 
                     <div class="simulation-field">
-                        <label asp-for="Formulario.MetodoAsignacion" class="field-label">Método de asignación</label>
-                        <select asp-for="Formulario.MetodoAsignacion" class="field-control">
-                            <option value="Convencional">Distribución convencional</option>
-                            <option value="Dinamica">Asignación dinámica</option>
+                        <label class="field-label" for="sim-metodo">Método de asignación</label>
+                        <select class="field-control" id="sim-metodo">
+                            <option value="Convencional" selected="@(!esDinamica)">Distribución convencional</option>
+                            <option value="Dinamica" selected="@esDinamica">Asignación dinámica</option>
                         </select>
                         <span asp-validation-for="Formulario.MetodoAsignacion" class="validation-message"></span>
                     </div>
                 </div>
 
                 <div class="method-options" role="radiogroup" aria-label="Método de asignación">
-                    <label class="method-card">
-                        <input type="radio" name="method-card" value="Convencional"
-                               checked="@(metodo == "Convencional")" />
+                    <label class="method-card @(esDinamica ? "" : "selected")">
+                        <input type="radio" name="Formulario.MetodoAsignacion" value="Convencional"
+                               checked="@(!esDinamica)" />
                         <span class="method-radio" aria-hidden="true"></span>
                         <span class="method-text">
                             <strong>Distribución convencional</strong>
                             <small>Asignación secuencial por orden de llegada.</small>
                         </span>
                     </label>
-                    <label class="method-card">
-                        <input type="radio" name="method-card" value="Dinamica"
-                               checked="@(metodo == "Dinamica")" />
+                    <label class="method-card @(esDinamica ? "selected" : "")">
+                        <input type="radio" name="Formulario.MetodoAsignacion" value="Dinamica"
+                               checked="@esDinamica" />
                         <span class="method-radio" aria-hidden="true"></span>
                         <span class="method-text">
                             <strong>Asignación dinámica</strong>
@@ -103,176 +106,115 @@
                 </div>
             </section>
 
-            <section class="panel step-panel">
-                <div class="step-heading">
-                    <span class="step-number">02</span>
+            <aside class="panel simulation-summary">
+                <div class="panel-header">
                     <div>
-                        <span class="eyebrow">SEGUNDO PASO</span>
                         <h2>Resumen de configuración</h2>
-                        <span class="step-description">Revise las variables antes de ejecutar.</span>
+                        <p>Revise las variables antes de ejecutar.</p>
                     </div>
+                    <span class="panel-badge">02</span>
                 </div>
 
                 <div class="scenario-card">
-                    <span class="scenario-card-icon" aria-hidden="true">▷</span>
+                    <span class="scenario-icon" aria-hidden="true">▶</span>
                     <div>
-                        <span class="scenario-card-label">ESCENARIO</span>
-                        <strong id="summary-name"></strong>
+                        <span class="scenario-eyebrow">ESCENARIO</span>
+                        <strong id="sum-nombre">@f.Nombre</strong>
                     </div>
                 </div>
 
                 <dl class="summary-list">
-                    <div class="summary-row">
-                        <dt>Usuarios estimados</dt>
-                        <dd id="summary-users"></dd>
-                    </div>
-                    <div class="summary-row">
-                        <dt>Puntos de atención</dt>
-                        <dd id="summary-points"></dd>
-                    </div>
-                    <div class="summary-row">
-                        <dt>Periodo simulado</dt>
-                        <dd id="summary-period"></dd>
-                    </div>
-                    <div class="summary-row">
-                        <dt>Duración</dt>
-                        <dd id="summary-duration"></dd>
-                    </div>
-                    <div class="summary-row">
+                    <div><dt>Usuarios estimados</dt><dd id="sum-usuarios">@f.CantidadUsuarios</dd></div>
+                    <div><dt>Puntos de atención</dt><dd id="sum-puntos">@f.PuntosActivos activos</dd></div>
+                    <div><dt>Periodo simulado</dt><dd id="sum-periodo">@f.HoraInicio.ToString("HH:mm")-@f.HoraFin.ToString("HH:mm")</dd></div>
+                    <div><dt>Duración</dt><dd id="sum-duracion">@SimulacionModel.FormatearDuracion(f.HoraInicio, f.HoraFin)</dd></div>
+                    <div>
                         <dt>Método</dt>
-                        <dd><span class="state-badge state-active" id="summary-method"></span></dd>
+                        <dd><span class="method-pill" id="sum-metodo"><span class="chip-dot"></span><span>@(esDinamica ? "Asignación dinámica" : "Distribución convencional")</span></span></dd>
                     </div>
                 </dl>
 
-                <div class="demo-note" role="note">
-                    <span class="demo-note-icon" aria-hidden="true">i</span>
+                <div class="demo-notice" role="note">
+                    <span class="demo-notice-icon" aria-hidden="true">i</span>
                     <p>La ejecución utiliza datos de demostración y no representa resultados reales del SERECI.</p>
                 </div>
 
-                <button type="submit" class="primary-button" id="run-button">
-                    <span id="run-icon" aria-hidden="true">▷</span>
+                <button type="submit" class="primary-button run-button" id="run-button">
+                    <span class="run-icon" aria-hidden="true">▶</span>
                     <span id="run-label">Ejecutar simulación</span>
                     <span id="run-spinner" class="spinner d-none" aria-hidden="true"></span>
                 </button>
-            </section>
+            </aside>
         </div>
     </form>
 </section>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
     <script>
         (() => {
-            const form = document.getElementById("simulation-form");
-            const field = (name) => document.getElementById(`Formulario_${name}`);
-            const nameInput = field("Nombre");
-            const usersInput = field("CantidadUsuarios");
-            const pointsInput = field("PuntosActivos");
-            const startInput = field("HoraInicio");
-            const endInput = field("HoraFin");
-            const methodSelect = field("MetodoAsignacion");
-            const methodCards = document.querySelectorAll('input[name="method-card"]');
-            const timeMessage = document.getElementById("time-range-message");
-            const button = document.getElementById("run-button");
-            const icon = document.getElementById("run-icon");
-            const label = document.getElementById("run-label");
-            const spinner = document.getElementById("run-spinner");
+            const $ = (id) => document.getElementById(id);
+            const form = $("simulation-form");
+            const nombre = $("sim-nombre");
+            const usuarios = $("sim-usuarios");
+            const puntos = $("sim-puntos");
+            const inicio = $("sim-inicio");
+            const fin = $("sim-fin");
+            const metodoSelect = $("sim-metodo");
+            const radios = form.querySelectorAll('input[name="Formulario.MetodoAsignacion"]');
+            const etiquetas = { Convencional: "Distribución convencional", Dinamica: "Asignación dinámica" };
 
-            const methodNames = {
-                Convencional: "Distribución convencional",
-                Dinamica: "Asignación dinámica"
+            const aMinutos = (valor) => {
+                const [h, m] = (valor || "").split(":").map(Number);
+                return Number.isNaN(h) || Number.isNaN(m) ? null : h * 60 + m;
             };
 
-            const toMinutes = (value) => {
-                const [hours, minutes] = (value || "").split(":").map(Number);
-                return Number.isNaN(hours) || Number.isNaN(minutes) ? null : hours * 60 + minutes;
-            };
-
-            const formatDuration = (total) => {
-                const hours = Math.floor(total / 60);
-                const minutes = total % 60;
-                if (!hours) return `${minutes} min`;
-                const hourText = `${hours} ${hours === 1 ? "hora" : "horas"}`;
-                return minutes ? `${hours} h ${minutes} min` : hourText;
-            };
-
-            const setText = (id, text) => {
-                document.getElementById(id).textContent = text;
-            };
-
-            const rangeIsValid = () => {
-                const start = toMinutes(startInput.value);
-                const end = toMinutes(endInput.value);
-                return start !== null && end !== null && end > start;
-            };
-
-            const updateSummary = () => {
-                const users = Number.parseInt(usersInput.value, 10);
-                const points = Number.parseInt(pointsInput.value, 10);
-                const start = toMinutes(startInput.value);
-                const end = toMinutes(endInput.value);
-                const validRange = rangeIsValid();
-
-                setText("summary-name", nameInput.value.trim() || "Sin nombre");
-                setText("summary-users", Number.isNaN(users) ? "--" : users.toLocaleString("es-BO"));
-                setText("summary-points", Number.isNaN(points) ? "--" :
-                    `${points} ${points === 1 ? "activo" : "activos"}`);
-                setText("summary-period", start !== null && end !== null ?
-                    `${startInput.value}–${endInput.value}` : "--");
-                setText("summary-duration", validRange ? formatDuration(end - start) : "--");
-                setText("summary-method", methodNames[methodSelect.value] ?? "--");
-
-                methodCards.forEach((card) => {
-                    card.checked = card.value === methodSelect.value;
-                });
-
-                const invalidRange = start !== null && end !== null && !validRange;
-                endInput.classList.toggle("input-invalid", invalidRange);
-                if (invalidRange) {
-                    timeMessage.textContent = "La hora final debe ser posterior a la hora inicial.";
-                } else if (!timeMessage.dataset.server) {
-                    timeMessage.textContent = "";
+            const duracion = () => {
+                const a = aMinutos(inicio.value);
+                const b = aMinutos(fin.value);
+                if (a === null || b === null || b <= a) {
+                    return "—";
                 }
+                const total = b - a;
+                const horas = Math.floor(total / 60);
+                const resto = total % 60;
+                const textoHoras = horas === 1 ? "1 hora" : `${horas} horas`;
+                if (resto === 0) {
+                    return textoHoras;
+                }
+                return horas === 0 ? `${resto} min` : `${horas} h ${resto} min`;
             };
 
-            // Conserva el mensaje del servidor hasta que la persona modifique el horario.
-            if (timeMessage.textContent.trim()) {
-                timeMessage.dataset.server = "true";
-            }
-            [startInput, endInput].forEach((input) =>
-                input.addEventListener("input", () => delete timeMessage.dataset.server));
+            const metodoActual = () =>
+                [...radios].find((radio) => radio.checked)?.value ?? "Dinamica";
 
-            [nameInput, usersInput, pointsInput, startInput, endInput].forEach((input) =>
-                input.addEventListener("input", updateSummary));
-            methodSelect.addEventListener("change", updateSummary);
-            methodCards.forEach((card) =>
-                card.addEventListener("change", () => {
-                    if (card.checked) {
-                        methodSelect.value = card.value;
-                        updateSummary();
-                    }
-                }));
+            const actualizar = () => {
+                const metodo = metodoActual();
+                $("sum-nombre").textContent = nombre.value.trim() || "Sin nombre";
+                $("sum-usuarios").textContent = usuarios.value || "0";
+                $("sum-puntos").textContent = `${puntos.value || 0} activos`;
+                $("sum-periodo").textContent = `${inicio.value || "--:--"}-${fin.value || "--:--"}`;
+                $("sum-duracion").textContent = duracion();
+                $("sum-metodo").lastElementChild.textContent = etiquetas[metodo];
+                metodoSelect.value = metodo;
+                radios.forEach((radio) =>
+                    radio.closest(".method-card").classList.toggle("selected", radio.checked));
+            };
 
-            form.addEventListener("submit", (event) => {
-                if (!rangeIsValid()) {
-                    event.preventDefault();
-                    updateSummary();
-                    endInput.focus();
-                    return;
-                }
-
-                // Si la validación del lado del cliente falla, no se muestra el estado de carga.
-                if (window.jQuery && !window.jQuery(form).valid()) {
-                    return;
-                }
-
-                button.disabled = true;
-                icon.classList.add("d-none");
-                label.textContent = "Ejecutando simulación";
-                spinner.classList.remove("d-none");
+            [nombre, usuarios, puntos, inicio, fin].forEach((campo) =>
+                campo.addEventListener("input", actualizar));
+            radios.forEach((radio) => radio.addEventListener("change", actualizar));
+            metodoSelect.addEventListener("change", () => {
+                radios.forEach((radio) => { radio.checked = radio.value === metodoSelect.value; });
+                actualizar();
             });
 
-            updateSummary();
+            form.addEventListener("submit", () => {
+                $("run-button").disabled = true;
+                $("run-label").textContent = "Ejecutando…";
+                $("run-spinner").classList.remove("d-none");
+            });
+
+            actualizar();
         })();
     </script>
 }

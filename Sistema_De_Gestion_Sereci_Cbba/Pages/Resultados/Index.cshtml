@@ -1,0 +1,276 @@
+﻿@page
+@model Sistema_De_Gestion_Sereci_Cbba.Pages.ResultadosModel
+@{
+    ViewData["Title"] = "Resultados";
+}
+
+<section class="results-page">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">MÓDULO DE ANÁLISIS</span>
+            <h1>Resultados de la simulación</h1>
+            <p>Comparación entre la distribución convencional y la asignación dinámica.</p>
+        </div>
+        @if (Model.Escenarios.Count > 0)
+        {
+            <form method="get" class="scenario-picker">
+                <label class="field-label" for="escenario-select">Escenario</label>
+                <select class="field-control" id="escenario-select" name="escenario"
+                        onchange="this.form.submit()">
+                    @foreach (var item in Model.Escenarios)
+                    {
+                        <option value="@item.Id" selected="@(item.Id == Model.Escenario?.Id)">
+                            @item.Nombre · @item.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                        </option>
+                    }
+                </select>
+            </form>
+        }
+    </div>
+
+    @if (Model.Escenario is null || Model.Comparativa is null)
+    {
+        <div class="panel empty-results">
+            <strong>Aún no hay escenarios simulados</strong>
+            <p>Configura y ejecuta una simulación para ver aquí sus resultados.</p>
+            <a class="primary-button page-action" asp-page="/Simulacion/Index">Ir a Simulación</a>
+        </div>
+    }
+    else
+    {
+        var escenario = Model.Escenario;
+        var conv = Model.Comparativa.Convencional;
+        var din = Model.Comparativa.Dinamica;
+        var reduccion = conv.EsperaPromedioMinutos > 0
+        ? (conv.EsperaPromedioMinutos - din.EsperaPromedioMinutos) * 100 / conv.EsperaPromedioMinutos
+        : 0;
+        var saturado = Model.CargaSobreCapacidad > 100;
+
+        (string Texto, string Clase) Delta(double a, double b, bool menorEsMejor)
+        {
+            var diff = b - a;
+            if (Math.Abs(diff) < 0.05)
+            {
+                return ("Sin cambio", "delta-neutral");
+            }
+
+            var texto = a != 0 ? $"{diff * 100 / a:+0;-0;0} %" : $"{diff:+0.#;-0.#;0}";
+            var mejor = menorEsMejor ? diff < 0 : diff > 0;
+            return (texto, mejor ? "delta-good" : "delta-bad");
+        }
+
+        var filas = new List<(string Etiqueta, string Conv, string Din, (string Texto, string Clase) Delta)>
+        {
+        ("Usuarios atendidos", $"{conv.Atendidos}", $"{din.Atendidos}",
+        Delta(conv.Atendidos, din.Atendidos, false)),
+        ("Sin ventanilla compatible", $"{conv.SinVentanillaCompatible}", $"{din.SinVentanillaCompatible}",
+        Delta(conv.SinVentanillaCompatible, din.SinVentanillaCompatible, true)),
+        ("Espera promedio", $"{conv.EsperaPromedioMinutos:0.#} min", $"{din.EsperaPromedioMinutos:0.#} min",
+        Delta(conv.EsperaPromedioMinutos, din.EsperaPromedioMinutos, true)),
+        ("Espera máxima", $"{conv.EsperaMaximaMinutos} min", $"{din.EsperaMaximaMinutos} min",
+        Delta(conv.EsperaMaximaMinutos, din.EsperaMaximaMinutos, true)),
+        ("Espera del 90 % de usuarios", $"{conv.EsperaP90Minutos} min", $"{din.EsperaP90Minutos} min",
+        Delta(conv.EsperaP90Minutos, din.EsperaP90Minutos, true)),
+        ("Tiempo extra tras el cierre", $"{conv.MinutosExtraTrasCierre} min", $"{din.MinutosExtraTrasCierre} min",
+        Delta(conv.MinutosExtraTrasCierre, din.MinutosExtraTrasCierre, true)),
+        ("Dispersión de carga", $"{conv.DispersionCarga:0.#} pts", $"{din.DispersionCarga:0.#} pts",
+        Delta(conv.DispersionCarga, din.DispersionCarga, true))
+        };
+
+        string[] tramos = ["Hasta 5 min", "6 a 15 min", "16 a 30 min", "Más de 30 min"];
+        var maxMinutos = Math.Max(1, Math.Max(
+        conv.Ventanillas.Max(item => item.MinutosOcupada),
+        din.Ventanillas.Max(item => item.MinutosOcupada)));
+        var maxHora = Math.Max(1, Math.Max(
+        conv.PorHora.Count == 0 ? 0 : conv.PorHora.Max(item => item.EsperaPromedioMinutos),
+        din.PorHora.Count == 0 ? 0 : din.PorHora.Max(item => item.EsperaPromedioMinutos)));
+        var horas = conv.PorHora.Select(item => item.Etiqueta)
+        .Union(din.PorHora.Select(item => item.Etiqueta)).OrderBy(item => item).ToList();
+
+        <div class="summary-strip">
+            <div class="summary-item">
+                <span class="summary-icon summary-blue">▤</span>
+                <span><small>Usuarios estimados</small><strong>@escenario.CantidadUsuariosEstimados</strong></span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+                <span class="summary-icon summary-green">▦</span>
+                <span><small>Puntos de atención</small><strong>@escenario.PuntosActivos</strong></span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+                <span class="summary-icon summary-purple">◷</span>
+                <span><small>Periodo simulado</small><strong>@escenario.HoraInicio.ToString("HH:mm")-@escenario.HoraFin.ToString("HH:mm")</strong></span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+                <span class="summary-icon summary-blue">⇄</span>
+                <span><small>Método del escenario</small><strong>@ResultadosModel.Metodo(escenario.MetodoAsignacion)</strong></span>
+            </div>
+        </div>
+
+        @if (reduccion >= 1)
+        {
+            <div class="recommendation result-hero">
+                <div class="recommendation-check">✓</div>
+                <div class="recommendation-main">
+                    <span class="eyebrow">RESULTADO PRINCIPAL</span>
+                    <h2>La asignación dinámica reduce la espera promedio un @reduccion.ToString("0") %</h2>
+                    <p>De @conv.EsperaPromedioMinutos.ToString("0.#") min con distribución convencional a @din.EsperaPromedioMinutos.ToString("0.#") min.</p>
+                </div>
+                <div class="recommendation-metrics">
+                    <div><span>Espera máxima</span><strong>@conv.EsperaMaximaMinutos → @din.EsperaMaximaMinutos min</strong></div>
+                    <div><span>Tiempo extra</span><strong>@conv.MinutosExtraTrasCierre → @din.MinutosExtraTrasCierre min</strong></div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="logic-banner result-hero-neutral">
+                <div class="logic-icon">i</div>
+                <div>
+                    <strong>@(reduccion <= -1 ? "En este escenario la asignación dinámica no mejora la espera promedio" : "Ambos métodos muestran una espera promedio similar")</strong>
+                    <p>Convencional: @conv.EsperaPromedioMinutos.ToString("0.#") min · Dinámica: @din.EsperaPromedioMinutos.ToString("0.#") min.</p>
+                </div>
+            </div>
+        }
+
+        @if (saturado)
+        {
+            <div class="demo-notice saturation-notice" role="note">
+                <span class="demo-notice-icon" aria-hidden="true">!</span>
+                <p>
+                    Con @escenario.PuntosActivos puntos de atención la demanda equivale al
+                    @Model.CargaSobreCapacidad.ToString("0") % de la capacidad del periodo. Mientras la carga supere el
+                    100 %, las esperas crecen aunque se reparta mejor; considera subir los puntos de atención o reducir los usuarios.
+                </p>
+            </div>
+        }
+
+        <div class="results-grid">
+            <section class="catalog-card">
+                <div class="catalog-card-header">
+                    <div>
+                        <h2>Comparación de indicadores</h2>
+                        <p>Mismas llegadas simuladas para ambos métodos.</p>
+                    </div>
+                    <span class="panel-badge">01</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="catalog-table">
+                        <thead>
+                            <tr><th>Indicador</th><th>Convencional</th><th>Dinámica</th><th>Variación</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var fila in filas)
+                            {
+                                <tr>
+                                    <td>@fila.Etiqueta</td>
+                                    <td>@fila.Conv</td>
+                                    <td><strong class="result-strong">@fila.Din</strong></td>
+                                    <td><span class="delta-badge @fila.Delta.Clase">@fila.Delta.Texto</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Distribución de la espera</h2>
+                        <p>Porcentaje de usuarios por tramo de espera.</p>
+                    </div>
+                    <span class="panel-badge">02</span>
+                </div>
+                <div class="bar-legend">
+                    <span><i class="legend-dot legend-conv"></i>Convencional</span>
+                    <span><i class="legend-dot legend-dyn"></i>Dinámica</span>
+                </div>
+                @for (var i = 0; i < tramos.Length; i++)
+                {
+                    var pctConv = conv.Atendidos == 0 ? 0 : conv.DistribucionEspera[i] * 100 / conv.Atendidos;
+                    var pctDin = din.Atendidos == 0 ? 0 : din.DistribucionEspera[i] * 100 / din.Atendidos;
+                    <div class="bar-group">
+                        <span class="bar-label">@tramos[i]</span>
+                        <div class="bar-row">
+                            <div class="bar-track"><div class="bar-fill bar-conv" style="width:@(pctConv)%"></div></div>
+                            <span class="bar-value">@pctConv %</span>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-track"><div class="bar-fill bar-dyn" style="width:@(pctDin)%"></div></div>
+                            <span class="bar-value">@pctDin %</span>
+                        </div>
+                    </div>
+                }
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Carga por ventanilla</h2>
+                        <p>Minutos de atención asignados a cada punto.</p>
+                    </div>
+                    <span class="panel-badge">03</span>
+                </div>
+                <div class="bar-legend">
+                    <span><i class="legend-dot legend-conv"></i>Convencional</span>
+                    <span><i class="legend-dot legend-dyn"></i>Dinámica</span>
+                </div>
+                @for (var i = 0; i < conv.Ventanillas.Count; i++)
+                {
+                    var a = conv.Ventanillas[i];
+                    var b = din.Ventanillas[i];
+                    <div class="bar-group">
+                        <span class="bar-label">@a.Nombre</span>
+                        <div class="bar-row">
+                            <div class="bar-track"><div class="bar-fill bar-conv" style="width:@(a.MinutosOcupada * 100 / maxMinutos)%"></div></div>
+                            <span class="bar-value">@a.MinutosOcupada min · @a.Atenciones</span>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-track"><div class="bar-fill bar-dyn" style="width:@(b.MinutosOcupada * 100 / maxMinutos)%"></div></div>
+                            <span class="bar-value">@b.MinutosOcupada min · @b.Atenciones</span>
+                        </div>
+                    </div>
+                }
+                <span class="form-help">Cada barra indica minutos de trabajo y cantidad de atenciones.</span>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Espera por hora de llegada</h2>
+                        <p>Espera promedio según la hora en que llegó el usuario.</p>
+                    </div>
+                    <span class="panel-badge">04</span>
+                </div>
+                <div class="bar-legend">
+                    <span><i class="legend-dot legend-conv"></i>Convencional</span>
+                    <span><i class="legend-dot legend-dyn"></i>Dinámica</span>
+                </div>
+                @foreach (var etiqueta in horas)
+                {
+                    var a = conv.PorHora.FirstOrDefault(item => item.Etiqueta == etiqueta)?.EsperaPromedioMinutos ?? 0;
+                    var b = din.PorHora.FirstOrDefault(item => item.Etiqueta == etiqueta)?.EsperaPromedioMinutos ?? 0;
+                    <div class="bar-group">
+                        <span class="bar-label">@etiqueta</span>
+                        <div class="bar-row">
+                            <div class="bar-track"><div class="bar-fill bar-conv" style="width:@((int)(a * 100 / maxHora))%"></div></div>
+                            <span class="bar-value">@a.ToString("0.#") min</span>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-track"><div class="bar-fill bar-dyn" style="width:@((int)(b * 100 / maxHora))%"></div></div>
+                            <span class="bar-value">@b.ToString("0.#") min</span>
+                        </div>
+                    </div>
+                }
+            </section>
+        </div>
+
+        <div class="demo-notice" role="note">
+            <span class="demo-notice-icon" aria-hidden="true">i</span>
+            <p>Los resultados provienen de una simulación con datos de demostración y no representan resultados reales del SERECI. Los turnos simulados no se guardan ni afectan las colas de las ventanillas.</p>
+        </div>
+    }
+</section>
